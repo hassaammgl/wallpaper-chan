@@ -1,16 +1,14 @@
-import LeftBar from './components/leftBar/leftBar'
-import TopBar from './components/topBar/topBar'
-import Gallery from './components/gallery/gallery'
+import { RouterProvider } from 'react-router'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { router } from './routes/router'
 
-const App = () => {
+const queryClient = new QueryClient()
+
+function App() {
   return (
-    <div className="flex w-full gap-4 m-[3px]">
-      <LeftBar/>
-      <div className="flex flex-col flex-1 mr-4 ml-[70px]">
-        <TopBar/>
-        <Gallery/>
-      </div>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
   )
 }
 
