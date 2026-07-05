@@ -1,41 +1,16 @@
-import 'dotenv/config'
-import express from 'express'
-import userRouter  from './routes/User.route.js';
-import boardRouter from './routes/Board.route.js';
-import commenRouter from './routes/Comment.route.js';
-import pinRouter from './routes/Pin.route.js';
-import connectDB from './utils/connectDB.js';
-import cors from 'cors';
-import cookieParser from 'cookie-parser';
-import fileUpload from 'express-fileupload';
+import app from "./src/app.js";
+import colors from "colors"
+import connectDb from "./src/config/db.js"
+import { checkEnvs } from "./src/config/constants.js";
 
+checkEnvs()
+connectDb()
 
-const app = express();
-app.use(express.json());
+const server = app.listen(5000, () => {
+    console.log("listening on port 5000");
+})
 
-app.use(cors({origin:process.env.CLIENT_URL , credentials: true}))
-app.use(cookieParser());
-app.use(fileUpload());
-
-
-app.use("/users"  , userRouter)
-app.use("/boards" , boardRouter )
-app.use("/pins" , pinRouter);
-app.use("/comments" , commenRouter);
-
-
-app.use((error , req,res, next)=>{
-    res.status(error.status || 500);
-
-    res.json({
-        message: error.message || "something went wrong!" ,
-        status: error.status,
-        stack: error.stack,
-    });
-});
-   
-app.listen(3000 , ()=>{
-    connectDB()
-    console.log("Server is running!")
-});
-export default  app;
+process.on("unhandledRejection", (err) => {
+    console.log(colors.red(`Error: ${err.message}`));
+    server.close(() => process.exit(1))
+})

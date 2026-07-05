@@ -3,20 +3,27 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon index.js",
-    "seed": "node utils/seed.js"
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "seed": "node src/utils/seed.js",
+    "seed:db": "node src/utils/seedDB.js"
   },
   "dependencies": {
     "@faker-js/faker": "^9.9.0",
+    "argon2": "^0.44.0",
     "bcryptjs": "^3.0.2",
+    "colors": "^1.4.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
+    "express-async-handler": "^1.2.0",
     "express-fileupload": "^1.5.2",
     "imagekit": "^6.0.0",
+    "joi": "^18.2.3",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.16.3",
+    "morgan": "^1.11.0",
     "sharp": "^0.34.3"
   },
   "devDependencies": {
