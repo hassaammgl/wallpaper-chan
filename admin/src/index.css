@@ -1,0 +1,87 @@
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Outfit", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-ink: #040806;
+  --color-canvas: #08100b;
+  --color-panel: #0f1a13;
+  --color-panel-hover: #152219;
+  --color-line: #1f3328;
+  --color-muted: #7a9485;
+  --color-fog: #d4e8db;
+
+  --color-parrot: #00e676;
+  --color-parrot-bright: #69f0ae;
+  --color-parrot-deep: #00c853;
+  --color-lime: #b2ff59;
+  --color-forest: #1b5e20;
+  --color-danger: #ff5252;
+
+  --color-accent: #00e676;
+  --color-accent-hover: #00c853;
+  --color-accent-soft: color-mix(in oklab, var(--color-accent) 16%, transparent);
+
+  --animate-fade-up: fade-up 0.5s ease-out both;
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+@utility glass {
+  background: color-mix(in oklab, var(--color-panel) 72%, transparent);
+  backdrop-filter: blur(20px);
+  border: 1px solid color-mix(in oklab, white 7%, transparent);
+}
+
+@utility glow-ring {
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--color-accent) 35%, transparent),
+    0 8px 32px color-mix(in oklab, var(--color-accent) 14%, transparent);
+}
+
+@utility text-gradient {
+  background: linear-gradient(135deg, var(--color-parrot-bright), var(--color-parrot) 50%, var(--color-lime));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility btn-primary {
+  background: linear-gradient(135deg, var(--color-parrot-deep), var(--color-parrot));
+  color: #041208;
+  font-weight: 600;
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+  &:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 28px color-mix(in oklab, var(--color-parrot) 40%, transparent);
+  }
+  &:active { transform: translateY(0); }
+  &:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+}
+
+@utility mesh-bg {
+  background-color: var(--color-canvas);
+  background-image:
+    radial-gradient(ellipse 80% 60% at 10% 0%, color-mix(in oklab, var(--color-parrot) 12%, transparent), transparent 50%),
+    radial-gradient(ellipse 60% 50% at 90% 10%, color-mix(in oklab, var(--color-lime) 8%, transparent), transparent 45%),
+    radial-gradient(ellipse 50% 40% at 50% 100%, color-mix(in oklab, var(--color-forest) 15%, transparent), transparent 40%);
+}
+
+body {
+  font-family: var(--font-display);
+  background: var(--color-ink);
+  color: var(--color-fog);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--color-accent) 40%, transparent);
+  color: white;
+}

@@ -4,7 +4,25 @@ import { useNavigate } from "react-router"
 import Editor from '../../components/editor/editor'
 import UseEditStore from '../../utils/editorStore'
 import apiRequest from "../../utils/apiRequest"
-import { HiPencilSquare, HiArrowUpTray } from 'react-icons/hi2'
+import { uploadWallpaper } from "../../utils/uploadWallpaper"
+import {
+  HiPencilSquare, HiArrowUpTray, HiPhoto,
+  HiDevicePhoneMobile, HiComputerDesktop,
+} from 'react-icons/hi2'
+
+const inputClass =
+  "w-full rounded-2xl border border-line bg-canvas/80 px-4 py-3 text-sm text-fog outline-none transition-all placeholder:text-muted focus:border-accent/50 focus:ring-2 focus:ring-accent/20"
+
+const CATEGORIES = [
+  "general", "anime", "nature", "abstract", "gaming", "minimal",
+  "dark", "amoled", "cars", "space", "fantasy", "cityscape",
+]
+
+const SUGGESTED_TAGS = [
+  "4k", "hd", "mobile", "desktop", "portrait", "landscape",
+  "dark", "light", "minimal", "anime", "nature", "gaming",
+  "amoled", "abstract", "wallpaper",
+]
 
 function CreatePage() {
   const { currentUser } = UseAuthStore()
@@ -14,138 +32,256 @@ function CreatePage() {
 
   const [file, setFile] = useState(null)
   const [isEditing, setIsEditing] = useState(false)
-  const [previewImg, setPreviewImg] = useState({
-    url: "",
-    width: 0,
-    height: 0,
-  })
+  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [error, setError] = useState("")
+  const [uploadProvider, setUploadProvider] = useState("imagekit")
+  const [deviceType, setDeviceType] = useState("both")
+  const [selectedTags, setSelectedTags] = useState([])
+  const [previewImg, setPreviewImg] = useState({ url: "", width: 0, height: 0 })
+  const [uploadedMedia, setUploadedMedia] = useState(null)
+
+  useEffect(() => {
+    apiRequest.get("/api/upload/config")
+      .then((res) => setUploadProvider(res.data.data.provider))
+      .catch(() => {});
+  }, [])
 
   useEffect(() => {
     if (file) {
-      const img = new Image()
-      img.src = URL.createObjectURL(file)
+      const img = new window.Image()
+      const objectUrl = URL.createObjectURL(file)
+      img.src = objectUrl
       img.onload = () => {
-        setPreviewImg({
-          url: URL.createObjectURL(file),
-          width: img.width,
-          height: img.height
-        })
+        setPreviewImg({ url: objectUrl, width: img.width, height: img.height })
+        setUploadedMedia(null)
       }
     }
   }, [file])
 
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0]
-    setFile(selectedFile)
-  }
-
   useEffect(() => {
-    if (!currentUser) {
-      navigate("/auth")
-    }
+    if (!currentUser) navigate("/auth")
   }, [navigate, currentUser])
+
+  const toggleTag = (tag) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    )
+  }
 
   const handleSubmit = async () => {
     if (isEditing) {
       setIsEditing(false)
       return
     }
-    else {
-      const formData = new FormData(formRef.current)
-      formData.append("media" , file)
-      formData.append("textOptions" , JSON.stringify(textOptions))
-      formData.append("canvasOptions" , JSON.stringify(canvasOptions))
-      try {
-        const res = await apiRequest.post("/pins" , formData , {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        })
-        navigate(`/pins/${res.data._id}`)
-      } catch(err) {
-        console.log(err)
+
+    if (!file) {
+      setError("Please select an image first")
+      return
+    }
+
+    setError("")
+    setUploading(true)
+    setUploadProgress(0)
+
+    try {
+      let mediaData = uploadedMedia
+      if (!mediaData) {
+        mediaData = await uploadWallpaper(file, { onProgress: setUploadProgress })
+        setUploadedMedia(mediaData)
       }
+
+      const formData = new FormData(formRef.current)
+      const customTags = (formData.get("tags") || "")
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
+      const allTags = [...new Set([...selectedTags, ...customTags])]
+
+      const res = await apiRequest.post("/pins", {
+        title: formData.get("title"),
+        description: formData.get("description"),
+        link: formData.get("link") || null,
+        board: formData.get("board") || "general",
+        tags: allTags.join(","),
+        media: mediaData.filePath,
+        originalMedia: mediaData.originalMedia,
+        originalUrl: mediaData.originalUrl,
+        uploadProvider: mediaData.provider,
+        width: mediaData.width,
+        height: mediaData.height,
+        resolution: `${mediaData.width}x${mediaData.height}`,
+        deviceType,
+        category: formData.get("category") || "general",
+        textOptions: JSON.stringify(textOptions),
+        canvasOptions: JSON.stringify(canvasOptions),
+      })
+
+      navigate(`/pins/${res.data._id}`)
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || "Upload failed")
+      setUploadedMedia(null)
+    } finally {
+      setUploading(false)
     }
   }
 
   return (
-    <div className="mx-auto">
-      <div className="px-[10px] py-2 border-y border-[#8b7c7c] border-double border-x-0 flex flex-row justify-between">
-        <h1 className="text-xl font-medium">{isEditing ? "Design your pin" : "Create Pin"}</h1>
+    <div className="mx-auto max-w-4xl animate-fade-up">
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-fog">
+            {isEditing ? "Design your wallpaper" : "Upload wallpaper"}
+          </h1>
+          <p className="mt-1 text-sm text-muted">
+            Raw full-quality upload via {uploadProvider === "cloudinary" ? "Cloudinary" : "ImageKit"} — no compression
+          </p>
+        </div>
         {file && (
-          <button onClick={handleSubmit}
-            className="bg-[#d01919] text-white rounded-[15px] px-[10px] py-2.5 border-none w-[100px] cursor-pointer">
-            {isEditing ? "Done" : "Publish"}
+          <button onClick={handleSubmit} disabled={uploading} className="btn-primary px-6 py-2.5 text-sm disabled:opacity-60">
+            {uploading ? `Uploading ${uploadProgress}%` : isEditing ? "Done" : "Publish"}
           </button>
         )}
       </div>
 
+      {error && (
+        <div className="mb-4 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">{error}</div>
+      )}
+
+      {uploading && (
+        <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-line">
+          <div className="h-full rounded-full bg-linear-to-r from-parrot-deep to-parrot transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+        </div>
+      )}
+
       {isEditing ? (
         <Editor previewImg={previewImg} />
       ) : (
-        <div className="mt-[30px] max-[1140px]:flex-col max-[1140px]:items-center max-[1140px]:mb-16">
-          {previewImg.url ? (
-            <div className="w-full max-w-[360px] mx-auto flex items-center justify-center relative p-5 overflow-hidden h-auto border-b border-black">
-              <img src={previewImg.url} alt='Preview' className="w-full max-w-[360px] max-h-[400px] h-full object-contain" />
-              <div className="absolute top-3 right-3 bg-white rounded-full p-[6px] shadow-[0_0_5px_rgba(0,0,0,0.2)] cursor-pointer flex items-center justify-center" onClick={() => setIsEditing(true)}>
-                <HiPencilSquare size={16}/>
+        <div className="grid gap-8 lg:grid-cols-2">
+          <div className="rounded-[28px] border border-line glass p-5">
+            {previewImg.url ? (
+              <div className="relative flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-canvas">
+                <img src={previewImg.url} alt="Preview" className="max-h-[420px] w-full object-contain" />
+                {previewImg.width > 0 && (
+                  <span className="mt-2 font-mono text-xs text-muted">
+                    {previewImg.width}×{previewImg.height} · Full HD original preserved
+                  </span>
+                )}
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="absolute top-3 right-3 flex h-9 w-9 items-center justify-center rounded-full border border-line glass text-fog transition-all hover:glow-ring"
+                >
+                  <HiPencilSquare size={16} />
+                </button>
+                {uploadedMedia && (
+                  <span className="absolute bottom-3 left-3 rounded-full bg-parrot/20 px-3 py-1 text-xs font-medium text-parrot">
+                    ✓ Uploaded ({uploadedMedia.provider})
+                  </span>
+                )}
+              </div>
+            ) : (
+              <label
+                htmlFor="file"
+                className="flex h-[420px] cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-line bg-canvas/50 transition-all hover:border-accent/40 hover:bg-accent-soft/30"
+              >
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent-soft text-accent">
+                  <HiArrowUpTray size={28} />
+                </div>
+                <div className="text-center">
+                  <p className="font-medium text-fog">Drop your wallpaper here</p>
+                  <p className="mt-1 text-sm text-muted">Original quality — no downscaling on upload</p>
+                </div>
+                <input className="hidden" id="file" onChange={(e) => setFile(e.target.files[0])} type="file" accept="image/*" />
+              </label>
+            )}
+          </div>
+
+          <form className="space-y-4 rounded-[28px] border border-line glass p-6" ref={formRef}>
+            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-accent">
+              <HiPhoto size={14} />
+              Wallpaper details
+            </div>
+
+            {/* Device type */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-muted">Device type *</label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { value: "mobile", label: "Mobile", icon: HiDevicePhoneMobile },
+                  { value: "desktop", label: "Desktop", icon: HiComputerDesktop },
+                  { value: "both", label: "Both", icon: HiPhoto },
+                ].map(({ value, label, icon: Icon }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setDeviceType(value)}
+                    className={`flex flex-col items-center gap-1.5 rounded-xl border py-3 text-xs font-medium transition-all ${
+                      deviceType === value
+                        ? "border-accent bg-accent-soft text-accent"
+                        : "border-line text-muted hover:border-accent/30"
+                    }`}
+                  >
+                    <Icon size={20} />
+                    {label}
+                  </button>
+                ))}
               </div>
             </div>
-          ) : (
-            <div className="h-[30%] pb-[30px] mx-auto w-[360px] border-b border-black max-[475px]:w-full">
-              <label htmlFor="file" className="w-full mx-auto mb-0 h-[470px] border border-[#ede2e2] border-double rounded-[40px] shadow-[0px_2px_8px_rgb(120,115,115)] text-center bg-[#f7f4f4] flex items-center justify-center relative flex-col">
-                <HiArrowUpTray size={48} className="text-gray-500"/>
-                <span className="text-lg mx-10 mt-[15px]">Choose a file or drag and drop it here</span>
-                <input
-                  className="h-full w-full absolute border-none opacity-0 cursor-pointer"
-                  id='file'
-                  onChange={handleFileChange}
-                  type='file'
-                  accept='image/*'
-                  required
-                />
-              </label>
-            </div>
-          )}
 
-          <form className="ml-[15px] p-[10px]" ref={formRef}>
-            <div className="flex flex-col mt-[10px]">
-              <label htmlFor='title' className="text-[15px] text-[#b0b0b0]">Title*</label>
-              <input type='text' placeholder='Add a title' name='title' id='title' required
-                className="rounded-2xl w-full text-[15px] p-[15px] text-[#333] bg-transparent border border-[#e0e0e0]" />
+            <div className="space-y-1.5">
+              <label htmlFor="title" className="text-xs font-medium text-muted">Title *</label>
+              <input type="text" placeholder="Give it a title" name="title" id="title" required className={inputClass} />
             </div>
-            <div className="flex flex-col mt-[10px]">
-              <label htmlFor='description' className="text-[15px] text-[#b0b0b0]">Description*</label>
-              <textarea placeholder='Add a detailed description' name='description' id='description' rows="4" required
-                className="rounded-2xl h-[100px] p-[13px] border border-[#e0e0e0] resize-none"></textarea>
+
+            <div className="space-y-1.5">
+              <label htmlFor="description" className="text-xs font-medium text-muted">Description *</label>
+              <textarea placeholder="Describe your wallpaper" name="description" id="description" rows="3" required className={`${inputClass} resize-none`} />
             </div>
-            <div className="flex flex-col mt-[10px]">
-              <label htmlFor='link' className="text-[15px] text-[#b0b0b0]">Link</label>
-              <input type='text' placeholder='Add link' name='link' id='link'
-                className="rounded-2xl w-full text-[15px] p-[15px] text-[#333] bg-transparent border border-[#e0e0e0]" />
-            </div>
-            <div className="flex flex-col mt-[10px]">
-              <label htmlFor='board' className="text-[15px] text-[#b0b0b0]">Board*</label>
-              <select name='board' id='board' required
-                className="rounded-2xl w-full text-[15px] p-[15px] text-[#333] bg-transparent border border-[#e0e0e0]">
-                <option value="">Select a board</option>
-                <option value="1">Board 1</option>
-                <option value="2">Board 2</option>
-                <option value="3">Board 3</option>
+
+            <div className="space-y-1.5">
+              <label htmlFor="category" className="text-xs font-medium text-muted">Category</label>
+              <select name="category" id="category" className={inputClass}>
+                {CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
+                ))}
               </select>
             </div>
-            <div className="flex flex-col mt-[10px]">
-              <label htmlFor='tags' className="text-[15px] text-[#b0b0b0]">Tagged topics</label>
-              <input type='text' placeholder='Search for a tag' name='tags' id='tags'
-                className="rounded-2xl w-full text-[15px] p-[15px] text-[#333] bg-transparent border border-[#e0e0e0]" />
-              <small className="text-xs text-gray-500">Don't worry, people won't see your tags</small>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted">Quick tags</label>
+              <div className="flex flex-wrap gap-1.5">
+                {SUGGESTED_TAGS.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => toggleTag(tag)}
+                    className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
+                      selectedTags.includes(tag)
+                        ? "bg-accent-soft text-accent"
+                        : "border border-line text-muted hover:border-accent/30"
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="mx-auto mt-[25px] w-[360px]">
-              <button type="button" onClick={handleSubmit}
-                className="bg-[#e2dddd] text-black p-[10px] rounded-[15px] w-full border-none shadow-[0px_4px_10px_rgb(167,162,162)] cursor-pointer">
-                Upload
-              </button>
+
+            <div className="space-y-1.5">
+              <label htmlFor="tags" className="text-xs font-medium text-muted">Custom tags</label>
+              <input type="text" placeholder="Add more tags, comma separated" name="tags" id="tags" className={inputClass} />
             </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="link" className="text-xs font-medium text-muted">Source link</label>
+              <input type="text" placeholder="https://..." name="link" id="link" className={inputClass} />
+            </div>
+
+            <input type="hidden" name="board" value="general" />
+
+            <button type="button" onClick={handleSubmit} disabled={uploading || !file} className="btn-primary mt-2 w-full py-3 text-sm disabled:opacity-50">
+              {uploading ? `Uploading raw image… ${uploadProgress}%` : "Publish wallpaper"}
+            </button>
           </form>
         </div>
       )}

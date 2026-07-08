@@ -1,15 +1,16 @@
-import React from 'react'
 import LeftBar from '../../components/leftBar/leftBar'
 import TopBar from '../../components/topBar/topBar'
 import { Outlet } from 'react-router'
 
 function MainLayout() {
   return (
-    <div className="flex w-full gap-4 m-[3px]">
-      <LeftBar/>
-      <div className="flex flex-col flex-1 mr-4 ml-[100px] h-screen">
-        <TopBar/>
-        <Outlet/>
+    <div className="mesh-bg min-h-screen">
+      <LeftBar />
+      <div className="flex flex-col min-h-screen pl-[88px] pr-4 md:pr-6 lg:pr-8">
+        <TopBar />
+        <main className="flex-1 overflow-y-auto pb-8 animate-fade-up">
+          <Outlet />
+        </main>
       </div>
     </div>
   )

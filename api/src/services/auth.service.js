@@ -62,8 +62,16 @@ export class AuthService {
         };
     }
 
-    static async logout(_id) {
-        await User.findByIdAndUpdate({ _id }, { refreshToken: null })
+    static async logout(userId) {
+        await User.findByIdAndUpdate(userId, { refreshToken: null })
         return true
+    }
+
+    static async getMe(userId) {
+        const user = await User.findById(userId).select('-hashedPassword -refreshToken')
+        if (!user) {
+            throw new AppError('User not found', 404)
+        }
+        return DTO.userDto(user)
     }
 }

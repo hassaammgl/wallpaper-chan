@@ -28,6 +28,19 @@ const seedDB = async () => {
 
     console.log("Creating users...");
     const users = [];
+
+    const adminPassword = await bcrypt.hash("Admin@12345", 10);
+    const admin = await new User({
+      displayName: "Admin",
+      userName: "admin",
+      email: "admin@wallpaper-chan.com",
+      hashedPassword: adminPassword,
+      img: faker.image.avatar(),
+      role: "admin",
+    }).save();
+    users.push(admin);
+    console.log("Admin user created: admin@wallpaper-chan.com / Admin@12345");
+
     for (let i = 1; i <= 10; i++) {
       const hashedPassword = await bcrypt.hash("password123", 10);
       const user = new User({

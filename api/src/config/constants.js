@@ -9,10 +9,14 @@ export const ENVS = {
     JWT_SECRET: process.env.JWT_SECRET,
     JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
     FRONTEND_URL: process.env.CLIENT_URL,
+    ADMIN_URL: process.env.ADMIN_URL || "http://localhost:5174",
     NODE_ENV: process.env.NODE_ENV,
     IK_PUBLIC_KEY: process.env.IK_PUBLIC_KEY,
     IK_PRIVATE_KEY: process.env.IK_PRIVATE_KEY,
     IK_URL_ENDPOINT: process.env.IK_URL_ENDPOINT,
+    CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
+    CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
+    CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
 }
 
 export const checkEnvs = async () => {

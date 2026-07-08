@@ -5,6 +5,9 @@ export const validateEnv = () => {
         { key: "JWT_SECRET", required: true },
         { key: "JWT_REFRESH_SECRET", required: true },
         { key: "CLIENT_URL", required: true },
+        { key: "IK_PUBLIC_KEY", required: true },
+        { key: "IK_PRIVATE_KEY", required: true },
+        { key: "IK_URL_ENDPOINT", required: true },
         { key: "NODE_ENV", default: "development" },
     ];
     const missingEnvs = []

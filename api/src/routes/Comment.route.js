@@ -1,15 +1,11 @@
 import express from "express"
-import { getPostComments } from "../controllers/Comment.controller.js"
-import { verifyToken } from "../middlewares/verifyToken.js";
-import { addComment, deleteComment } from "../controllers/Comment.controller.js";
-
+import { getPostComments, addComment, deleteComment } from "../controllers/Comment.controller.js";
+import { protect } from "../middlewares/auth.middlewares.js";
 
 const router = express.Router();
 
-router.get("/:postId" , getPostComments)
-
-router.post("/" ,verifyToken, addComment)
-
-router.delete("/:id" , verifyToken , deleteComment);
+router.get("/:postId", getPostComments)
+router.post("/", protect, addComment)
+router.delete("/:id", protect, deleteComment);
 
 export default router;

@@ -1,32 +1,51 @@
-import React from 'react'
 import Image from '../Image/Image'
-import { Link } from 'react-router'
+import { NavLink } from 'react-router'
 import { HiHome, HiPlusCircle, HiBell, HiChatBubbleLeftRight, HiCog6Tooth } from 'react-icons/hi2'
+
+const navItems = [
+  { to: '/', icon: HiHome, label: 'Home' },
+  { to: '/create', icon: HiPlusCircle, label: 'Create' },
+  { to: '/', icon: HiBell, label: 'Alerts' },
+  { to: '/', icon: HiChatBubbleLeftRight, label: 'Messages' },
+]
 
 function LeftBar() {
   return (
-    <div className="flex flex-col items-center justify-between h-screen fixed top-0 left-0 w-[72px] py-7 z-[1000] border-r border-[#e9e9e9]">
-      <div className="flex flex-col items-center gap-[25px]">
-        <Link to='/' className="flex items-center justify-center w-12 h-12 rounded-lg hover:bg-[#f1f1f1]">
-          <Image path='/general/logo.png' alt='logo'/>
-        </Link>
-        <Link to='/' className="flex items-center justify-center w-12 h-12 rounded-lg hover:bg-[#f1f1f1]">
-          <HiHome size={24}/>
-        </Link>
-        <Link to='/create' className="flex items-center justify-center w-12 h-12 rounded-lg hover:bg-[#f1f1f1]">
-          <HiPlusCircle size={24}/>
-        </Link>
-        <Link to='/' className="flex items-center justify-center w-12 h-12 rounded-lg hover:bg-[#f1f1f1]">
-          <HiBell size={24}/>
-        </Link>
-        <Link to='/' className="flex items-center justify-center w-12 h-12 rounded-lg hover:bg-[#f1f1f1]">
-          <HiChatBubbleLeftRight size={24}/>
-        </Link>
+    <aside className="fixed top-4 left-4 bottom-4 z-50 flex w-[60px] flex-col items-center justify-between rounded-[28px] glass py-5 shadow-2xl shadow-black/40">
+      <div className="flex flex-col items-center gap-1">
+        <NavLink
+          to="/"
+          className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl transition-all hover:bg-panel-hover"
+        >
+          <Image path="/general/logo.png" alt="logo" className="h-7 w-7 object-contain" />
+        </NavLink>
+
+        {navItems.map(({ to, icon: Icon, label }) => (
+          <NavLink
+            key={label}
+            to={to}
+            title={label}
+            className={({ isActive }) =>
+              `group relative flex h-11 w-11 items-center justify-center rounded-2xl transition-all duration-200 ${
+                isActive
+                  ? 'bg-accent-soft text-accent glow-ring'
+                  : 'text-muted hover:bg-panel-hover hover:text-fog'
+              }`
+            }
+          >
+            <Icon size={22} />
+          </NavLink>
+        ))}
       </div>
-      <Link to='/'>
-        <HiCog6Tooth size={24}/>
-      </Link>
-    </div>
+
+      <NavLink
+        to="/"
+        title="Settings"
+        className="flex h-11 w-11 items-center justify-center rounded-2xl text-muted transition-all hover:bg-panel-hover hover:text-fog"
+      >
+        <HiCog6Tooth size={22} />
+      </NavLink>
+    </aside>
   )
 }
 

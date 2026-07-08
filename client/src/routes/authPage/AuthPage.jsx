@@ -1,84 +1,142 @@
 import Image from '../../components/Image/Image'
 import { useState } from 'react'
-import { useNavigate } from "react-router"
+import { useNavigate, Link } from "react-router"
 import apiRequest from "../../utils/apiRequest"
 import UseAuthStore from '../../utils/authStore'
+import { HiSparkles } from 'react-icons/hi2'
 
-function AuthPage() {
-  const [isRegister , setIsRegister] = useState(false)
-  const [error , setError] = useState("")
+function AuthPage({ type = "login" }) {
+  const [isRegister, setIsRegister] = useState(type === "register")
+  const [error, setError] = useState("")
   const navigate = useNavigate()
-  const {setCurrentUser} =  UseAuthStore()
+  const { setCurrentUser } = UseAuthStore()
 
-  const handleSubmit = async (e)=>{
-       e.preventDefault()
-       const formData = new FormData(e.target)
-       const data = Object.fromEntries(formData)
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    const formData = new FormData(e.target)
+    const data = Object.fromEntries(formData)
 
-      try {
-        const res = await apiRequest.post(`/users/auth/${isRegister ? "register" : "login"}` , data)
-        setCurrentUser(res.data)
-        navigate("/")
-      } catch(err){
-        setError(err.response.data.message)
-      }
+    try {
+      const res = await apiRequest.post(`/api/auth/${isRegister ? "register" : "login"}`, data)
+      setCurrentUser(res.data.data)
+      navigate("/")
+    } catch (err) {
+      setError(err.response?.data?.message || "Something went wrong")
+    }
   }
 
+  const inputClass =
+    "w-full rounded-2xl border border-line bg-canvas/80 px-4 py-3.5 text-fog outline-none transition-all placeholder:text-muted focus:border-accent/50 focus:ring-2 focus:ring-accent/20"
+
   return (
-    <div className="w-screen h-screen flex items-center justify-center">
-      <div className="flex flex-col items-center justify-center gap-8 p-8 rounded-[32px] shadow-[0px_0px_10px_0px_rgba(0,0,0,0.1)]">
-        <div className="">
-          <Image path='/general/logo.png' alt="" />
-          <h1 className="font-normal">{isRegister ? "Create an account" : "Login to Pinterset"}</h1>
+    <div className="mesh-bg flex min-h-screen">
+      {/* Left panel — brand */}
+      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden p-12 lg:flex">
+        <div className="absolute inset-0 bg-linear-to-br from-parrot/15 via-transparent to-lime/10" />
+        <div className="absolute -left-20 top-1/4 h-72 w-72 rounded-full bg-parrot/15 blur-3xl animate-float" />
+        <div className="absolute -right-10 bottom-1/4 h-64 w-64 rounded-full bg-lime/10 blur-3xl animate-float" style={{ animationDelay: '2s' }} />
+
+        <div className="relative z-10">
+          <Image path="/general/logo.png" alt="logo" className="h-10 w-10 object-contain" />
         </div>
 
-        {isRegister ? (
-          <form key="register" onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <label htmlFor='userName' className="text-sm">username</label>
-              <input type="userName" placeholder='username' id='userName' required name='userName'
-                className="p-4 border-2 border-[#e0e0e0] rounded-2xl" />
+        <div className="relative z-10 space-y-6">
+          <h1 className="text-5xl font-bold leading-tight tracking-tight">
+            <span className="text-gradient">Wallpaper-chan</span>
+          </h1>
+          <p className="max-w-md text-lg text-muted leading-relaxed">
+            Curate, discover, and share stunning wallpapers. Your personal canvas for visual inspiration.
+          </p>
+          <div className="flex items-center gap-3 text-sm text-muted">
+            <HiSparkles className="text-lime" size={18} />
+            <span>Join thousands of creators sharing their art</span>
+          </div>
+        </div>
+
+        <p className="relative z-10 text-xs text-muted/60">
+          © 2026 Wallpaper-chan
+        </p>
+      </div>
+
+      {/* Right panel — form */}
+      <div className="flex flex-1 items-center justify-center p-6 sm:p-10">
+        <div className="w-full max-w-md animate-fade-up">
+          <div className="mb-8 lg:hidden">
+            <Image path="/general/logo.png" alt="logo" className="mb-4 h-9 w-9" />
+            <h1 className="text-2xl font-bold text-gradient">Wallpaper-chan</h1>
+          </div>
+
+          <div className="rounded-[28px] border border-line glass p-8 shadow-2xl shadow-black/30">
+            <div className="mb-8">
+              <h2 className="text-2xl font-semibold text-fog">
+                {isRegister ? "Create your account" : "Welcome back"}
+              </h2>
+              <p className="mt-1.5 text-sm text-muted">
+                {isRegister ? "Start sharing your wallpapers today" : "Sign in to continue exploring"}
+              </p>
             </div>
-            <div className="flex flex-col gap-2">
-              <label htmlFor="displayName" className="text-sm">Name</label>
-              <input type="displayName" placeholder="Name" required name="displayName" id="displayName"
-                className="p-4 border-2 border-[#e0e0e0] rounded-2xl" />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label htmlFor="email" className="text-sm">Email</label>
-              <input type="email" placeholder="Email" required name="email" id="email"
-                className="p-4 border-2 border-[#e0e0e0] rounded-2xl" />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label htmlFor="password" className="text-sm">Password</label>
-              <input type="password" placeholder="Password" required name="password" id="password"
-                className="p-4 border-2 border-[#e0e0e0] rounded-2xl" />
-            </div>
-            <button type="submit" className="bg-[#e50829] p-4 border-none rounded-[32px] text-white cursor-pointer font-bold">Register</button>
-            <p onClick={() => setIsRegister(false)} className="text-sm text-center cursor-pointer">
-              Do you have an account? <b>Login</b>
-            </p>
-            {error && <p className="text-[#e50829]">{error}</p>}
-          </form>
-        ) : (
-          <form key="loginForm" onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <label htmlFor="email" className="text-sm">Email</label>
-              <input type="email" placeholder="Email" required name="email" id="email"
-                className="p-4 border-2 border-[#e0e0e0] rounded-2xl" />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label htmlFor="password" className="text-sm">Password</label>
-              <input type="password" placeholder="Password" required name="password" id="password"
-                className="p-4 border-2 border-[#e0e0e0] rounded-2xl" />
-            </div>
-            <button type="submit" className="bg-[#e50829] p-4 border-none rounded-[32px] text-white cursor-pointer font-bold">Login</button>
-            <p onClick={() => setIsRegister(true)} className="text-sm text-center cursor-pointer">
-              Don&apos;t have an account? <b>Register</b>
-            </p>
-            {error && <p className="text-[#e50829]">{error}</p>}
-          </form>
-        )}
+
+            {isRegister ? (
+              <form key="register" onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="userName" className="text-xs font-medium uppercase tracking-wider text-muted">Username</label>
+                  <input type="text" placeholder="yourname" id="userName" required name="userName" className={inputClass} />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="displayName" className="text-xs font-medium uppercase tracking-wider text-muted">Display name</label>
+                  <input type="text" placeholder="Your Name" required name="displayName" id="displayName" className={inputClass} />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="email" className="text-xs font-medium uppercase tracking-wider text-muted">Email</label>
+                  <input type="email" placeholder="you@example.com" required name="email" id="email" className={inputClass} />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="password" className="text-xs font-medium uppercase tracking-wider text-muted">Password</label>
+                  <input type="password" placeholder="••••••••" required name="password" id="password" className={inputClass} />
+                </div>
+                <button type="submit" className="btn-primary mt-2 w-full py-3.5 text-sm">
+                  Create account
+                </button>
+                <p className="text-center text-sm text-muted">
+                  Already have an account?{' '}
+                  <button type="button" onClick={() => setIsRegister(false)} className="font-semibold text-accent hover:text-accent-hover">
+                    Sign in
+                  </button>
+                </p>
+              </form>
+            ) : (
+              <form key="loginForm" onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="email" className="text-xs font-medium uppercase tracking-wider text-muted">Email</label>
+                  <input type="email" placeholder="you@example.com" required name="email" id="email" className={inputClass} />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="password" className="text-xs font-medium uppercase tracking-wider text-muted">Password</label>
+                  <input type="password" placeholder="••••••••" required name="password" id="password" className={inputClass} />
+                </div>
+                <button type="submit" className="btn-primary mt-2 w-full py-3.5 text-sm">
+                  Sign in
+                </button>
+                <p className="text-center text-sm text-muted">
+                  New here?{' '}
+                  <button type="button" onClick={() => setIsRegister(true)} className="font-semibold text-accent hover:text-accent-hover">
+                    Create account
+                  </button>
+                </p>
+              </form>
+            )}
+
+            {error && (
+              <div className="mt-4 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+                {error}
+              </div>
+            )}
+          </div>
+
+          <p className="mt-6 text-center text-xs text-muted">
+            <Link to="/" className="hover:text-fog transition-colors">← Back to explore</Link>
+          </p>
+        </div>
       </div>
     </div>
   )

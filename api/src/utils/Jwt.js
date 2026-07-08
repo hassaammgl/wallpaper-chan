@@ -51,26 +51,32 @@ export class TokenService {
         return Utils.verifyToken(token, true)
     }
     static setTokens(res, { accessToken, refreshToken }) {
-        res.cookie("accessToken", accessToken, {
+        const cookieOptions = {
             httpOnly: true,
             secure: ENVS.NODE_ENV === "production",
-            sameSite: "strict",
+            sameSite: ENVS.NODE_ENV === "production" ? "strict" : "lax",
+        }
+        res.cookie("accessToken", accessToken, {
+            ...cookieOptions,
             maxAge: 2 * 24 * 60 * 60 * 1000
         })
         res.cookie("refreshToken", refreshToken, {
-            httpOnly: true,
-            secure: ENVS.NODE_ENV === "production",
-            sameSite: "strict",
+            ...cookieOptions,
             maxAge: 7 * 24 * 60 * 60 * 1000
         })
     }
     static clearTokens(res) {
-        res.cookie("accessToken", "", {
+        const cookieOptions = {
             httpOnly: true,
+            secure: ENVS.NODE_ENV === "production",
+            sameSite: ENVS.NODE_ENV === "production" ? "strict" : "lax",
+        }
+        res.cookie("accessToken", "", {
+            ...cookieOptions,
             expires: new Date(0)
         })
         res.cookie("refreshToken", "", {
-            httpOnly: true,
+            ...cookieOptions,
             expires: new Date(0)
         })
     }

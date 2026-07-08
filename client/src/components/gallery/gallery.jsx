@@ -1,46 +1,82 @@
-import React from 'react'
-import GalleryItem from '../galleryitems/galleryItems';
-import { useInfiniteQuery } from '@tanstack/react-query';
-import InfiniteScroll from "react-infinite-scroll-component";
-import axios from "axios";
+import GalleryItem from '../galleryitems/galleryItems'
+import { useInfiniteQuery } from '@tanstack/react-query'
+import InfiniteScroll from "react-infinite-scroll-component"
+import apiRequest from "../../utils/apiRequest"
 
-const fetchPins = async ({ pageParam , search , userId , boardId})=>{
-  const res= await axios.get(`${import.meta.env.VITE_API_ENDPOINT}/pins`,{
-    params : {
-    cursor: pageParam || 0,
-    search: search || undefined,
-    userId: userId || undefined,
-    boardId: boardId || undefined,
+const fetchPins = async ({ pageParam, search, userId, boardId, deviceType }) => {
+  const res = await apiRequest.get('/pins', {
+    params: {
+      cursor: pageParam || 0,
+      search: search || undefined,
+      userId: userId || undefined,
+      boardId: boardId || undefined,
+      deviceType: deviceType || undefined,
     },
   })
   return res.data
 }
-function Gallery({search , userId , boardId} )  {
-  const {data , fetchNextPage , hasNextPage , status} = useInfiniteQuery(
-    { queryKey: ['pins'] ,
-       queryFn: ({pageParam=0}) => fetchPins({pageParam , search , userId , boardId}), 
-      initialPageParam:0,
-      getNextPageParam: (lastPage , pages)=>lastPage.nextCursor,
-    }
+
+function PinSkeleton() {
+  return (
+    <div className="rounded-[20px] bg-panel ring-1 ring-line animate-pulse" style={{ gridRowEnd: 'span 25', minHeight: 200 }} />
   )
-  if(status==="pending") return "Loading..."
-  if(status==="error") return "Something went wrong..."
+}
 
-  console.log(data)
+function Gallery({ search, userId, boardId, deviceType }) {
+  const { data, fetchNextPage, hasNextPage, status } = useInfiniteQuery({
+    queryKey: ['pins', search, userId, boardId, deviceType],
+    queryFn: ({ pageParam = 0 }) => fetchPins({ pageParam, search, userId, boardId, deviceType }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+  })
 
-  const allPins = data?.pages.flatMap(page=>page.pins) || []
+  if (status === "pending") {
+    return (
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 auto-rows-[10px]">
+        {Array.from({ length: 12 }).map((_, i) => <PinSkeleton key={i} />)}
+      </div>
+    )
+  }
+
+  if (status === "error") {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 rounded-[28px] border border-line glass py-20 text-center">
+        <p className="text-lg font-medium text-fog">Couldn't load wallpapers</p>
+        <p className="text-sm text-muted">Check your connection and try again</p>
+      </div>
+    )
+  }
+
+  const allPins = data?.pages.flatMap(page => page.pins) || []
+
+  if (allPins.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 rounded-[28px] border border-line glass py-20 text-center">
+        <p className="text-lg font-medium text-fog">No wallpapers found</p>
+        <p className="text-sm text-muted">Try a different search or check back later</p>
+      </div>
+    )
+  }
 
   return (
-    <InfiniteScroll dataLength={allPins.length} 
-    next={fetchNextPage} hasMore={!!hasNextPage}
-     loader={<h4>Loading more pins</h4>}
-     endMessage={<h3>All posts Loaded</h3>}
-     >
-    <div className="grid gap-4 grid-cols-7 auto-rows-[10px] max-[1746px]:grid-cols-6 max-[1509px]:grid-cols-5 max-[1272px]:grid-cols-4 max-[1035px]:grid-cols-3 max-[798px]:grid-cols-2 max-[475px]:grid-cols-1">
-      {allPins?.map(item=>
-        <GalleryItem key={item._id} item={item}/>
-      )}
-    </div>
+    <InfiniteScroll
+      dataLength={allPins.length}
+      next={fetchNextPage}
+      hasMore={!!hasNextPage}
+      loader={
+        <div className="flex justify-center py-8">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-accent" />
+        </div>
+      }
+      endMessage={
+        <p className="py-8 text-center text-sm text-muted">You've seen it all ✨</p>
+      }
+    >
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 auto-rows-[10px]">
+        {allPins.map(item => (
+          <GalleryItem key={item._id} item={item} />
+        ))}
+      </div>
     </InfiniteScroll>
   )
 }

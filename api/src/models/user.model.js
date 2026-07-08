@@ -21,9 +21,17 @@ const userSchema = new Schema({
     hashedPassword :{
         type:String,
         required:true,
+        select: false,
     },
-
-   
+    refreshToken: {
+        type: String,
+        select: false,
+    },
+    role: {
+        type: String,
+        enum: ["user", "admin"],
+        default: "user",
+    },
 },
   {timestamps: true}
 

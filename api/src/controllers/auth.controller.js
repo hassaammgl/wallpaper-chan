@@ -24,11 +24,19 @@ export const loginUser = asyncHandler(async (req, res) => {
 })
 
 export const logoutUser = asyncHandler(async (req, res) => {
-    const isClear = await AuthService.logout(req.user.id)
+    const isClear = await AuthService.logout(req.userId)
     if (isClear) {
         TokenService.clearTokens(res)
         return ApiResponse.success(res, {
             message: "Logged out successfully"
         })
     }
+})
+
+export const getMe = asyncHandler(async (req, res) => {
+    const user = await AuthService.getMe(req.userId)
+    return ApiResponse.success(res, {
+        message: "User fetched successfully",
+        data: user
+    })
 })

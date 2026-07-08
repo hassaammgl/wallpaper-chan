@@ -9,8 +9,19 @@ const AuthPage = React.lazy(() => import('./authPage/AuthPage'))
 const SearchPage = React.lazy(() => import('./searchPage/SearchPage'))
 const ProfilePage = React.lazy(() => import('./profilePage/ProfilePage'))
 
+function PageLoader() {
+  return (
+    <div className="flex min-h-[50vh] items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-line border-t-accent" />
+        <p className="text-sm text-muted">Loading...</p>
+      </div>
+    </div>
+  )
+}
+
 const SuspenseWrapper = ({ children }) => (
-  <Suspense fallback={<div>Loading...</div>}>
+  <Suspense fallback={<PageLoader />}>
     {children}
   </Suspense>
 )
@@ -22,8 +33,8 @@ export const router = createBrowserRouter([
       { path: "/", element: <SuspenseWrapper><HomePage /></SuspenseWrapper> },
       { path: "/create", element: <SuspenseWrapper><CreatePage /></SuspenseWrapper> },
       { path: "/pins/:id", element: <SuspenseWrapper><PostPage /></SuspenseWrapper> },
-      { path: "/:userName", element: <SuspenseWrapper><ProfilePage /></SuspenseWrapper> },
       { path: "/search", element: <SuspenseWrapper><SearchPage /></SuspenseWrapper> },
+      { path: "/:userName", element: <SuspenseWrapper><ProfilePage /></SuspenseWrapper> },
     ]
   },
   { path: "/auth", element: <SuspenseWrapper><AuthPage type="login" /></SuspenseWrapper> },

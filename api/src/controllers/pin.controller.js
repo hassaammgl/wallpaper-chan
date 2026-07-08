@@ -1,248 +1,234 @@
-import Pin from "../models/pin.model.js" ;
-import User from "../models/user.model.js";
-import sharp from "sharp";
-import ImageKit from "imagekit";
+import Pin from "../models/pin.model.js";
+import imagekit from "../utils/imagekit.js";
 import likeModel from "../models/like.model.js";
-import Jwt from "jsonwebtoken";
 import saveModel from "../models/save.model.js";
+import { getDownloadUrl } from "../utils/mediaUrls.js";
 
-export const getPins = async (req , res)=>{
-
-    const pageNumber = Number(req.query.cursor)||0;
-    // const search = req.query.search;
+export const getPins = async (req, res) => {
+    const pageNumber = Number(req.query.cursor) || 0;
     const search = req.query.search?.trim();
-
     const userId = req.query.userId;
-
     const boardId = req.query.boardId;
-
-
+    const deviceType = req.query.deviceType;
     const LIMIT = 21;
 
-    let query ={};
-    if(search && search !==""){
-        query={
+    let query = {};
+    if (search && search !== "") {
+        query = {
             $or: [
-                {title:{$regex:search, $options: "i"}},
-                {tags:{$in:[search]}},
+                { title: { $regex: search, $options: "i" } },
+                { tags: { $in: [search] } },
+                { category: { $regex: search, $options: "i" } },
             ],
         };
-
-    }
-    else if (userId){
-        query ={user : userId};
-    }
-    else if (boardId){
-        query = {board : boardId}
+    } else if (userId) {
+        query = { user: userId };
+    } else if (boardId) {
+        query = { board: boardId };
     }
 
-const pins = await Pin.find(query).limit(LIMIT).skip(pageNumber * LIMIT);
+    if (deviceType && deviceType !== "all") {
+        query.deviceType = deviceType === "both"
+            ? "both"
+            : { $in: [deviceType, "both"] };
+    }
 
+    const pins = await Pin.find(query).limit(LIMIT).skip(pageNumber * LIMIT);
+    const hasNextPage = pins.length === LIMIT;
 
-//     const pins = await Pin.find(
-//         search
-//         ?
-//         {
-//         $or:[
-//             {title:{$regex:search, $options:"i"}},
-//             {tags:{$in:[search]}},
-//         ],
-//     } : userId ? {user: userId}: {}
-
-// ).limit(LIMIT).skip(pageNumber * LIMIT);
-   
-
-
-    const hasNextPage = pins.length ===LIMIT;
-
-    // await new Promise(resolve=>setTimeout(resolve , 3000))
-
-    res.status(200)
-    .json({pins , nextCursor:hasNextPage ? pageNumber + 1 : null});
+    res.status(200).json({ pins, nextCursor: hasNextPage ? pageNumber + 1 : null });
 };
 
-
-export const getPin = async (req,res)=>{
+export const getPin = async (req, res) => {
     const { id } = req.params;
-
-    const pin = await Pin.findById(id).populate("user" , "userName img displayName" );
+    const pin = await Pin.findById(id).populate("user", "userName img displayName");
     res.status(200).json(pin);
-}
-
-
-
-export const createPin = async (req,res)=>{
-  const {title , description , link , board , tags , textOptions , canvasOptions} = req.body;
-
-  const media = req.files.media;
-  if(!title || !description || !media){
-    return res.status(400).json({message:"All fields are required!"});
-  }
-  const parsedTextOptions= JSON.parse(textOptions || "{}")
-  const parsedCanvasOptions= JSON.parse(canvasOptions || "{}")
-  
-   const metadata = await sharp(media.data).metadata()
-  
-   const originalOrientation = metadata.width < metadata.height ? "portrait" : "landscape"
-   const originalAspectRatio = metadata.width / metadata.height
-
-   let clientAspectRatio;
-   let width;
-   let height;
-
-   if(parsedCanvasOptions.size !== "original"){
-    const [w, h] = parsedCanvasOptions.size.split(":");
-    clientAspectRatio = w / h;
-   }
-   else{
-    clientAspectRatio = parsedCanvasOptions.orientation === originalOrientation ? originalAspectRatio : 1 / originalAspectRatio;
-   }
-
-   width= metadata.width;
-   height= metadata.width / clientAspectRatio;
-
-   const imagekit = new ImageKit({
-    publicKey: process.env.IK_PUBLIC_KEY,
-    privateKey: process.env.IK_PRIVATE_KEY,
-    urlEndpoint:process.env.IK_URL_ENDPOINT,
-   });
-
-
-   
- // Prepare transformation string
-
-  const textLeftPosition = Math.round((parsedTextOptions.left * width)/375)
-  const textTopPosition = Math.round((parsedTextOptions.top *height)/parsedCanvasOptions.height
-)
-    const transformationString = `w-${width},h-${height}${
-      originalAspectRatio > clientAspectRatio ? ",cm-pad_resize" : ""
-    },bg-${parsedCanvasOptions.backgroundColor.substring(1)}${
-      parsedTextOptions.text
-        ? `,l-text,i-${parsedTextOptions.text},fs-${parsedTextOptions.fontSize},lx-${textLeftPosition},ly-${textTopPosition},co-${parsedTextOptions.color.substring(1)},l-end`
-        : ""
-    }`;
-
-   imagekit.upload({
-    file : media.data,
-    fileName:media.name,
-   
-    folder:"test",
-    transformation:{
-      pre:transformationString
-
-    }
-   }).then(async (response)=>{
-    const newPin = await Pin.create({
-      user:req.userId,
-      title,
-      description,
-      link: link || null , 
-      board: board || null ,
-      tags: tags ? tags.split(",").map(tag=>tag.trim()) : [] ,
-      media:response.filePath,
-      width:response.width,
-      height:response.height,
-    });
-    //console.dir(response);
-    return res.status(201).json(newPin)
-
-   }).catch((err)=>{
-    return res.status(500).json(err);
-   })
-   
 };
 
-export const interactionCheck = async (req,res)=>{
-  const {id}=req.params;
-
-  const token = req.cookies.token;
-   const likeCount = await likeModel.countDocuments({pin:id})
-   if(!token){
-    return res.status(200).json({likeCount , isLiked:false , isSaved: false})
-   }
-
-
-   
-
-  Jwt.verify(token , process.env.JWT_SECRET , async(err , payload)=>{
-            
-
-             if(err){
-                  return res.status(200).json({likeCount , isLiked:false , isSaved: false})
-             }
-
-             const userId = payload.userId;
-           
-
-            const isLiked = await likeModel.findOne({
-              user: userId,
-              pin:id,
-
-            })
-            const isSaved = await saveModel.findOne({
-              user: userId,
-              pin:id,
-              
-            })
-           return res.status(200).json({likeCount , isLiked: isLiked ? true : false , isSaved:isSaved ? true : false,})
-
-        });
+export const getPinDownload = async (req, res) => {
+    const { id } = req.params;
+    const pin = await Pin.findById(id);
+    if (!pin) {
+        return res.status(404).json({ message: "Pin not found" });
     }
 
-    export const interact = async (req,res)=>{
-      const {id} = req.params
-
-      const {type} = req.body
-      if(type==="like"){
-        const isLiked = await likeModel.findOne({
-          pin:id,
-          user:req.userId,
-
-        });
-        if(isLiked){
-          await likeModel.deleteOne({
-            pin:id,
-            user : req.userId,
-
-          });
-        }
-        else{
-          await likeModel.create({
-            pin:id,
-            user: req.userId,
-          })
-        }
-      }
-      else{
-        const isSaved = await saveModel.findOne({
-          pin:id,
-          user:req.userId,
-
-        });
-        if(isSaved){
-          await saveModel.deleteOne({
-            pin:id,
-            user : req.userId,
-
-          });
-        }
-        else{
-          await saveModel.create({
-            pin:id,
-            user: req.userId,
-          })
-      }
+    const downloadUrl = getDownloadUrl(pin);
+    if (!downloadUrl) {
+        return res.status(404).json({ message: "Download URL not available" });
     }
 
-    return res.status(200).json({message: "Successfull"})
-  }
+    const safeTitle = (pin.title || "wallpaper").replace(/[^a-z0-9-_]/gi, "_");
+    const ext = pin.originalUrl?.includes(".png") ? "png" : "jpg";
 
+    return res.status(200).json({
+        downloadUrl,
+        filename: `${safeTitle}_${pin.resolution || `${pin.width}x${pin.height}`}.${ext}`,
+        resolution: pin.resolution || `${pin.width}x${pin.height}`,
+        width: pin.width,
+        height: pin.height,
+        deviceType: pin.deviceType,
+    });
+};
 
+const buildTransformationString = (parsedTextOptions, parsedCanvasOptions, width, height, originalAspectRatio, clientAspectRatio) => {
+    const textLeftPosition = Math.round((parsedTextOptions.left * width) / 375);
+    const textTopPosition = Math.round((parsedTextOptions.top * height) / parsedCanvasOptions.height);
 
+    return `w-${width},h-${height}${
+        originalAspectRatio > clientAspectRatio ? ",cm-pad_resize" : ""
+    },bg-${(parsedCanvasOptions.backgroundColor || "#008080").substring(1)}${
+        parsedTextOptions.text
+            ? `,l-text,i-${parsedTextOptions.text},fs-${parsedTextOptions.fontSize},lx-${textLeftPosition},ly-${textTopPosition},co-${parsedTextOptions.color.substring(1)},l-end`
+            : ""
+    }`;
+};
 
+const applyImageKitTransform = async (mediaPath, transformationString, fileName) => {
+    const transformedUrl = imagekit.url({
+        path: mediaPath,
+        transformation: [{ raw: transformationString }],
+    });
 
+    const response = await imagekit.upload({
+        file: transformedUrl,
+        fileName: fileName || `pin-${Date.now()}.jpg`,
+        folder: "/wallpapers",
+    });
 
+    return response;
+};
 
+export const createPin = async (req, res) => {
+    try {
+        const {
+            title, description, link, board, tags,
+            textOptions, canvasOptions,
+            media, originalMedia, originalUrl, uploadProvider,
+            width, height, deviceType, category, resolution,
+        } = req.body;
 
+        if (!title || !description) {
+            return res.status(400).json({ message: "Title and description are required!" });
+        }
 
-   
+        const parsedTextOptions = typeof textOptions === "string" ? JSON.parse(textOptions || "{}") : (textOptions || {});
+        const parsedCanvasOptions = typeof canvasOptions === "string" ? JSON.parse(canvasOptions || "{}") : (canvasOptions || {});
+
+        let mediaPath = media || originalMedia;
+        let originalPath = originalMedia || media;
+        let pinWidth = Number(width);
+        let pinHeight = Number(height);
+        const provider = uploadProvider || "imagekit";
+
+        if (!mediaPath) {
+            return res.status(400).json({ message: "Image upload is required!" });
+        }
+
+        const hasEditorChanges =
+            provider === "imagekit" &&
+            (parsedTextOptions.text ||
+                parsedCanvasOptions.size !== "original" ||
+                parsedCanvasOptions.backgroundColor !== "#008080");
+
+        if (hasEditorChanges && pinWidth && pinHeight) {
+            const originalAspectRatio = pinWidth / pinHeight;
+            const originalOrientation = pinWidth < pinHeight ? "portrait" : "landscape";
+
+            let clientAspectRatio;
+            if (parsedCanvasOptions.size !== "original") {
+                const [w, h] = parsedCanvasOptions.size.split(":");
+                clientAspectRatio = w / h;
+            } else {
+                clientAspectRatio =
+                    parsedCanvasOptions.orientation === originalOrientation
+                        ? originalAspectRatio
+                        : 1 / originalAspectRatio;
+            }
+
+            const transformWidth = pinWidth;
+            const transformHeight = pinWidth / clientAspectRatio;
+
+            const transformationString = buildTransformationString(
+                parsedTextOptions,
+                parsedCanvasOptions,
+                transformWidth,
+                transformHeight,
+                originalAspectRatio,
+                clientAspectRatio
+            );
+
+            const response = await applyImageKitTransform(originalPath, transformationString, `pin-${Date.now()}.jpg`);
+            mediaPath = response.filePath;
+            pinWidth = response.width;
+            pinHeight = response.height;
+        }
+
+        const tagList = Array.isArray(tags)
+            ? tags
+            : (tags ? tags.split(",").map((tag) => tag.trim()).filter(Boolean) : []);
+
+        const newPin = await Pin.create({
+            user: req.userId,
+            title,
+            description,
+            link: link || null,
+            board: board || "general",
+            tags: tagList,
+            media: mediaPath,
+            originalMedia: originalPath,
+            originalUrl: originalUrl || null,
+            uploadProvider: provider,
+            width: pinWidth,
+            height: pinHeight,
+            resolution: resolution || `${pinWidth}x${pinHeight}`,
+            deviceType: deviceType || "both",
+            category: category || "general",
+        });
+
+        return res.status(201).json(newPin);
+    } catch (err) {
+        console.error("createPin error:", err);
+        return res.status(500).json({ message: err.message || "Failed to create pin" });
+    }
+};
+
+export const interactionCheck = async (req, res) => {
+    const { id } = req.params;
+    const likeCount = await likeModel.countDocuments({ pin: id });
+
+    if (!req.userId) {
+        return res.status(200).json({ likeCount, isLiked: false, isSaved: false });
+    }
+
+    const isLiked = await likeModel.findOne({ user: req.userId, pin: id });
+    const isSaved = await saveModel.findOne({ user: req.userId, pin: id });
+
+    return res.status(200).json({
+        likeCount,
+        isLiked: Boolean(isLiked),
+        isSaved: Boolean(isSaved),
+    });
+};
+
+export const interact = async (req, res) => {
+    const { id } = req.params;
+    const { type } = req.body;
+
+    if (type === "like") {
+        const isLiked = await likeModel.findOne({ pin: id, user: req.userId });
+        if (isLiked) {
+            await likeModel.deleteOne({ pin: id, user: req.userId });
+        } else {
+            await likeModel.create({ pin: id, user: req.userId });
+        }
+    } else {
+        const isSaved = await saveModel.findOne({ pin: id, user: req.userId });
+        if (isSaved) {
+            await saveModel.deleteOne({ pin: id, user: req.userId });
+        } else {
+            await saveModel.create({ pin: id, user: req.userId });
+        }
+    }
+
+    return res.status(200).json({ message: "Successfull" });
+};

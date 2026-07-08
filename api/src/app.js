@@ -9,6 +9,8 @@ import userRouter from './routes/User.route.js';
 import boardRouter from './routes/Board.route.js';
 import commentRouter from './routes/Comment.route.js';
 import pinRouter from './routes/Pin.route.js';
+import uploadRouter from './routes/upload.route.js';
+import adminRouter from './routes/admin.route.js';
 import { ENVS } from "./config/constants.js";
 
 const app = express();
@@ -17,7 +19,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
 app.use(cors({
-    origin: ENVS.FRONTEND_URL,
+    origin: [ENVS.FRONTEND_URL, ENVS.ADMIN_URL].filter(Boolean),
     credentials: true,
 }))
 app.use(morgan("combined"))
@@ -32,6 +34,8 @@ app.get("/", (req, res) => {
 
 // routes
 app.use("/api/auth", authRoutes)
+app.use("/api/upload", uploadRouter)
+app.use("/api/admin", adminRouter)
 app.use("/users", userRouter)
 app.use("/boards", boardRouter)
 app.use("/pins", pinRouter)

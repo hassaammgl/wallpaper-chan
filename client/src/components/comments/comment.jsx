@@ -1,41 +1,39 @@
-import React from 'react'
-import Image from '../Image/Image';
-import { format } from 'timeago.js';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import apiRequest from '../../utils/apiRequest';
-import { HiTrash } from 'react-icons/hi2';
+import Image from '../Image/Image'
+import { format } from 'timeago.js'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import apiRequest from '../../utils/apiRequest'
+import { HiTrash } from 'react-icons/hi2'
 
-function Comment({comment , pinId}) {
-  const deleteComment = async (id)=>{
-    const res = await apiRequest.delete(`/comments/${id}`);
-    return res.data;
-  }
-
+function Comment({ comment, pinId }) {
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn : deleteComment,
-    onSuccess : ()=>{
-      queryClient.invalidateQueries({queryKey: ["comments" , pinId]});
+    mutationFn: (id) => apiRequest.delete(`/comments/${id}`).then((res) => res.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["comments", pinId] })
     }
   })
-  const handleDelete = (id)=>{
-    mutation.mutate(id);
-  }
 
   return (
-    <div className="flex items-start justify-between w-full" key={comment._id}>
-      <div className="flex gap-[10px] flex-1">
-        <Image path={comment.user.img || "/general/noAvatar.png"} alt="" className="w-8 h-8 rounded-full object-cover"/>
-        <div className="flex flex-col gap-[4px]">
-          <span className="font-medium text-sm">{comment.user.displayName}</span>
-          <p className="text-sm">{comment.description}</p>
-          <span className="text-xs text-gray-500">{format(comment.createdAt.trim())}</span>
+    <div className="group flex items-start justify-between gap-2">
+      <div className="flex flex-1 gap-3">
+        <Image
+          path={comment.user.img || "/general/noAvatar.png"}
+          alt=""
+          className="h-8 w-8 shrink-0 rounded-xl object-cover ring-1 ring-line"
+        />
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-semibold text-fog">{comment.user.displayName}</span>
+          <p className="text-sm text-muted leading-relaxed">{comment.description}</p>
+          <span className="text-[11px] text-muted/70">{format(comment.createdAt.trim())}</span>
         </div>
       </div>
-      <div onClick={()=>handleDelete(comment._id)} className="cursor-pointer">
-        <HiTrash size={16}/>
-      </div>
+      <button
+        onClick={() => mutation.mutate(comment._id)}
+        className="rounded-lg p-1.5 text-muted opacity-0 transition-all hover:bg-danger/10 hover:text-danger group-hover:opacity-100"
+      >
+        <HiTrash size={14} />
+      </button>
     </div>
   )
 }

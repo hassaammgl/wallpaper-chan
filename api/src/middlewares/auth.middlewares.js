@@ -3,6 +3,17 @@ import { TokenService } from "../utils/Jwt.js"
 import { AppError } from "../utils/AppError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
+const attachUserFromToken = async (req, accessToken) => {
+    const decoded = TokenService.verifyAccessToken(accessToken);
+    const user = await User.findById(decoded.id).select('-hashedPassword -refreshToken')
+    if (!user) {
+        throw new AppError('User not found', 404);
+    }
+    req.userId = user._id;
+    req.user = user;
+    return user;
+}
+
 export const protect = async (req, res, next) => {
     try {
         const accessToken = req.cookies.accessToken;
@@ -10,15 +21,7 @@ export const protect = async (req, res, next) => {
         if (!accessToken) {
             throw new AppError("Access token is required", 401);
         }
-        const decoded = TokenService.verifyAccessToken(accessToken);
-
-        const user = await User.findById(decoded.id).select('-hashedPassword -refreshToken')
-        if (!user) {
-            throw new AppError('User not found', 404);
-        }
-
-        req.userId = user._id;
-        req.user = user;
+        await attachUserFromToken(req, accessToken);
         next()
 
     } catch (error) {
@@ -30,4 +33,26 @@ export const protect = async (req, res, next) => {
         }
         next(error);
     }
+}
+
+export const optionalAuth = async (req, res, next) => {
+    try {
+        const accessToken = req.cookies.accessToken;
+        if (accessToken) {
+            await attachUserFromToken(req, accessToken);
+        }
+        next()
+    } catch {
+        next()
+    }
+}
+
+export const isAdmin = (req, res, next) => {
+    if (!req.user || req.user.role !== "admin") {
+        return ApiResponse.error(res, {
+            message: "Admin access required",
+            statusCode: 403,
+        });
+    }
+    next();
 }
