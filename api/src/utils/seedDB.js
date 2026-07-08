@@ -41,17 +41,17 @@ const seedDB = async () => {
     users.push(admin);
     console.log("Admin user created: admin@wallpaper-chan.com / Admin@12345");
 
-    for (let i = 1; i <= 10; i++) {
-      const hashedPassword = await bcrypt.hash("password123", 10);
-      const user = new User({
-        displayName: faker.person.fullName(),
-        userName: faker.internet.userName().toLowerCase().replace(/[^a-z0-9_]/g, ''),
-        email: faker.internet.email(),
-        hashedPassword: hashedPassword,
-        img: faker.image.avatar(),
-      });
-      users.push(await user.save());
-    }
+    // for (let i = 1; i <= 10; i++) {
+    //   const hashedPassword = await bcrypt.hash("password123", 10);
+    //   const user = new User({
+    //     displayName: faker.person.fullName(),
+    //     userName: faker.internet.userName().toLowerCase().replace(/[^a-z0-9_]/g, ''),
+    //     email: faker.internet.email(),
+    //     hashedPassword: hashedPassword,
+    //     img: faker.image.avatar(),
+    //   });
+    //   users.push(await user.save());
+    // }
 
     console.log("Creating boards...");
     const boards = [];
