@@ -5,7 +5,6 @@ if (!uri) throw new Error("MONGODB_URI is not defined");
 
 const options = {
   tls: true,
-  tlsMinVersion: "TLSv1.2",
   tlsAllowInvalidCertificates: true,
   retryWrites: true,
   w: "majority",
