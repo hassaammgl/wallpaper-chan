@@ -5,13 +5,14 @@ import clientPromise from "./mongodb";
 
 let _auth = null;
 
-export function getAuth() {
+export async function getAuth() {
   if (_auth) return _auth;
 
+  const client = await clientPromise;
+  const db = client.db();
+
   _auth = betterAuth({
-    database: mongodbAdapter(
-      clientPromise.then((c) => c.db())
-    ),
+    database: mongodbAdapter(db),
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false,

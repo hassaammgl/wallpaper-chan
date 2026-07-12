@@ -24,7 +24,7 @@ export async function GET() {
 
     const [usersRes, pins, comments, boards, likes, follows, saves] =
       await Promise.all([
-        getAuth().api.listUsers({ query: { limit: 5 } }),
+        (await getAuth()).api.listUsers({ query: { limit: 5 } }),
         Pin.countDocuments(),
         Comment.countDocuments(),
         Board.countDocuments(),
