@@ -13,8 +13,8 @@ import {
 const navItems = [
   { to: "/", icon: HiHome, label: "Home" },
   { to: "/create", icon: HiPlusCircle, label: "Create" },
-  { to: "/", icon: HiBell, label: "Alerts" },
-  { to: "/", icon: HiChatBubbleLeftRight, label: "Messages" },
+  { to: "/alerts", icon: HiBell, label: "Alerts" },
+  { to: "/messages", icon: HiChatBubbleLeftRight, label: "Messages" },
 ];
 
 function LeftBar() {
@@ -50,7 +50,7 @@ function LeftBar() {
       </div>
 
       <Link
-        href="/"
+        href="/settings"
         title="Settings"
         className="flex h-11 w-11 items-center justify-center rounded-2xl text-muted transition-all hover:bg-panel-hover hover:text-fog"
       >

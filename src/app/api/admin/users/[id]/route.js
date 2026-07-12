@@ -23,7 +23,7 @@ export async function PATCH(request, { params }) {
     const { id } = await params;
     const { role } = await request.json();
 
-    await getAuth().api.updateUser({
+    await (await getAuth()).api.updateUser({
       userId: id,
       fields: { role },
     });
@@ -50,7 +50,7 @@ export async function DELETE(request, { params }) {
     const { id } = await params;
     await connectDB();
 
-    await getAuth().api.removeUser({ userId: id });
+    await (await getAuth()).api.removeUser({ userId: id });
     await Pin.deleteMany({ user: id });
     await Comment.deleteMany({ user: id });
     await Board.deleteMany({ user: id });

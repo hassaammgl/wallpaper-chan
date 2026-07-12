@@ -18,7 +18,7 @@ export async function POST(request, { params }) {
     await connectDB();
     const { userName } = await params;
 
-    const user = await getAuth().api.listUsers({
+    const user = await (await getAuth()).api.listUsers({
       query: { userName },
     });
 

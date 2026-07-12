@@ -28,7 +28,7 @@ export async function GET(request) {
       ];
     }
 
-    const result = await getAuth().api.listUsers({
+    const result = await (await getAuth()).api.listUsers({
       query: { ...query, limit, offset: (page - 1) * limit },
     });
 

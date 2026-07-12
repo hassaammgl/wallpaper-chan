@@ -71,9 +71,13 @@ function UserButton() {
                 <HiShieldCheck size={16} /> Admin Panel
               </Link>
             )}
-            <div className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-fog transition-colors hover:bg-panel-hover cursor-pointer">
+            <Link
+              href="/settings"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-fog transition-colors hover:bg-panel-hover"
+            >
               <HiCog6Tooth size={16} className="text-muted" /> Settings
-            </div>
+            </Link>
             <div className="my-1 h-px bg-line" />
             <button
               onClick={handleLogout}
