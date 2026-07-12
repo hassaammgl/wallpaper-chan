@@ -107,6 +107,7 @@ function CreatePage() {
       const res = await apiRequest.post("/api/pins", {
         title: formData.get("title"),
         description: formData.get("description"),
+        prompt: formData.get("prompt") || null,
         link: formData.get("link") || null,
         board: formData.get("board") || "general",
         tags: allTags.join(","),
@@ -296,6 +297,22 @@ function CreatePage() {
                 rows="3"
                 required
                 className={`${inputClass} resize-none`}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label
+                htmlFor="prompt"
+                className="text-xs font-medium text-muted"
+              >
+                AI Prompt
+              </label>
+              <textarea
+                placeholder="Paste the prompt used to generate this wallpaper (optional)"
+                name="prompt"
+                id="prompt"
+                rows="2"
+                className={`${inputClass} resize-none font-mono text-xs`}
               />
             </div>
 

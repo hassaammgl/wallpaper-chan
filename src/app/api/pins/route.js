@@ -74,6 +74,7 @@ export async function POST(request) {
     const {
       title,
       description,
+      prompt,
       link,
       board,
       tags,
@@ -102,6 +103,7 @@ export async function POST(request) {
     const pin = await Pin.create({
       title,
       description,
+      prompt: prompt || null,
       link,
       board: board || "general",
       tags: tagsArray,

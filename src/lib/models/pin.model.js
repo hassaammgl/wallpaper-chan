@@ -21,6 +21,7 @@ const pinSchema = new mongoose.Schema(
     category: { type: String, default: "general" },
     title: { type: String, required: true },
     description: { type: String, required: true },
+    prompt: { type: String },
     link: { type: String },
     board: { type: String, required: true },
     tags: { type: [String] },

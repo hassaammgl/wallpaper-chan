@@ -7,7 +7,7 @@ import Image from "@/components/Image/Image";
 import PostInteractions from "@/components/postInteractions/PostInteractions";
 import Comments from "@/components/comments/Comments";
 import apiRequest from "@/lib/apiRequest";
-import { HiArrowLeft, HiArrowDownTray, HiDevicePhoneMobile, HiComputerDesktop } from "react-icons/hi2";
+import { HiArrowLeft, HiArrowDownTray, HiDevicePhoneMobile, HiComputerDesktop, HiSparkles } from "react-icons/hi2";
 
 function PinPage() {
   const { id } = useParams();
@@ -151,6 +151,18 @@ function PinPage() {
             <div className="space-y-1">
               {data.title && <h2 className="text-lg font-semibold text-fog">{data.title}</h2>}
               {data.description && <p className="text-sm text-muted leading-relaxed">{data.description}</p>}
+            </div>
+          )}
+
+          {data.prompt && (
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-accent">
+                <HiSparkles size={12} />
+                AI Prompt
+              </div>
+              <div className="rounded-xl border border-line bg-canvas/80 p-3">
+                <p className="font-mono text-xs leading-relaxed text-muted whitespace-pre-wrap">{data.prompt}</p>
+              </div>
             </div>
           )}
 
