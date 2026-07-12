@@ -35,7 +35,7 @@ export async function getAuth() {
         },
         role: {
           type: "string",
-          required: true,
+          required: false,
           default: "user",
         },
       },
