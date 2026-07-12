@@ -38,6 +38,11 @@ export async function getAuth() {
           required: false,
           default: "user",
         },
+        blocked: {
+          type: "boolean",
+          required: false,
+          default: false,
+        },
       },
     },
     session: {

@@ -21,11 +21,14 @@ export async function PATCH(request, { params }) {
     }
 
     const { id } = await params;
-    const { role } = await request.json();
+    const body = await request.json();
+    const fields = {};
+    if (body.role !== undefined) fields.role = body.role;
+    if (body.blocked !== undefined) fields.blocked = body.blocked;
 
     await (await getAuth()).api.updateUser({
       userId: id,
-      fields: { role },
+      fields,
     });
 
     return Response.json({ success: true, message: "User updated" });

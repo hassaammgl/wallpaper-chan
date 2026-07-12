@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import connectDB from "@/lib/db";
 import Pin from "@/lib/models/pin.model";
 import { getSession } from "@/lib/getSession";
+import { getAuth } from "@/lib/auth";
 
 export async function GET(request) {
   try {
@@ -26,6 +27,16 @@ export async function GET(request) {
     if (userId) query.user = userId;
     if (boardId) query.board = boardId;
     if (deviceType) query.deviceType = deviceType;
+
+    const auth = await getAuth();
+    const blockedUsers = await auth.api.listUsers({
+      query: { blocked: true, limit: 1000 },
+    });
+    const blockedIds = (blockedUsers.users || []).map((u) => u.id);
+    if (blockedIds.length > 0) {
+      query.user = { $nin: blockedIds };
+      if (userId) query.user = { $nin: blockedIds, $eq: userId };
+    }
 
     const pins = await Pin.find(query)
       .sort({ createdAt: -1 })

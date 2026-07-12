@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import connectDB from "@/lib/db";
 import { getSession } from "@/lib/getSession";
 import Pin from "@/lib/models/pin.model";
+import { getAuth } from "@/lib/auth";
 
 export async function GET(request) {
   try {
@@ -36,11 +37,22 @@ export async function GET(request) {
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
-      .populate("user", "displayName userName img");
+      .populate("user", "displayName userName img blocked");
+
+    const auth = await getAuth();
+    const blockedUsers = await auth.api.listUsers({
+      query: { blocked: true, limit: 1000 },
+    });
+    const blockedIds = new Set((blockedUsers.users || []).map((u) => u.id));
+
+    const pinsWithStatus = pins.map((pin) => ({
+      ...pin.toObject(),
+      userBlocked: pin.user ? blockedIds.has(pin.user._id?.toString() || pin.user.id) : false,
+    }));
 
     return Response.json({
       success: true,
-      data: { pins, pages, total },
+      data: { pins: pinsWithStatus, pages, total },
     });
   } catch (error) {
     return Response.json(

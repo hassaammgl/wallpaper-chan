@@ -39,6 +39,7 @@ export async function GET(request) {
       email: u.email,
       img: u.img,
       role: u.role,
+      blocked: u.blocked || false,
       createdAt: u.createdAt,
     }));
 

@@ -1,28 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "@/components/Image/Image";
 import useAuthStore from "@/stores/authStore";
 import apiRequest from "@/lib/apiRequest";
+import { uploadWallpaper } from "@/lib/uploadWallpaper";
 import {
   HiUser,
-  HiPhoto,
   HiCheckCircle,
   HiExclamationTriangle,
+  HiCamera,
 } from "react-icons/hi2";
 
 function SettingsPage() {
   const { currentUser, updateCurrentUser } = useAuthStore();
   const router = useRouter();
+  const fileInputRef = useRef();
 
   const [displayName, setDisplayName] = useState(
     currentUser?.displayName || ""
   );
   const [userName, setUserName] = useState(currentUser?.userName || "");
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
+
+  const handleAvatarSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  };
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -31,16 +43,32 @@ function SettingsPage() {
     setError(null);
 
     try {
-      await apiRequest.patch("/api/user", { displayName, userName });
-      updateCurrentUser({ ...currentUser, displayName, userName });
+      let imgPath = currentUser?.img || null;
+
+      if (avatarFile) {
+        setUploading(true);
+        const mediaData = await uploadWallpaper(avatarFile, { folder: "/avatars" });
+        imgPath = mediaData.filePath;
+        setUploading(false);
+      }
+
+      const fields = { displayName, userName };
+      if (imgPath !== currentUser?.img) {
+        fields.img = imgPath;
+      }
+
+      await apiRequest.patch("/api/user", fields);
+      updateCurrentUser({ ...currentUser, ...fields });
+      setAvatarFile(null);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       setError(
-        err.response?.data?.message || "Failed to update profile"
+        err.response?.data?.message || err.message || "Failed to update profile"
       );
     } finally {
       setSaving(false);
+      setUploading(false);
     }
   };
 
@@ -58,6 +86,8 @@ function SettingsPage() {
     );
   }
 
+  const displayImg = avatarPreview || currentUser.img || "/general/noAvatar.png";
+
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <div>
@@ -72,18 +102,46 @@ function SettingsPage() {
 
       {/* Profile Card */}
       <div className="rounded-[28px] border border-line glass p-8">
-        <div className="flex items-center gap-5 mb-8">
-          <Image
-            path={currentUser.img || "/general/noAvatar.png"}
-            alt="avatar"
-            className="h-20 w-20 rounded-2xl object-cover ring-4 ring-accent/20"
-          />
+        {/* Avatar Upload */}
+        <div className="mb-8 flex items-center gap-5">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="group relative shrink-0"
+          >
+            {avatarPreview ? (
+              <img
+                src={avatarPreview}
+                alt="avatar preview"
+                className="h-20 w-20 rounded-2xl object-cover ring-4 ring-accent/20"
+              />
+            ) : (
+              <Image
+                path={currentUser.img || "/general/noAvatar.png"}
+                alt="avatar"
+                className="h-20 w-20 rounded-2xl object-cover ring-4 ring-accent/20"
+              />
+            )}
+            <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-ink/50 opacity-0 transition-opacity group-hover:opacity-100">
+              <HiCamera size={24} className="text-white" />
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarSelect}
+              className="hidden"
+            />
+          </button>
           <div>
             <h2 className="text-xl font-bold text-fog">
               {currentUser.displayName || currentUser.userName}
             </h2>
             <p className="text-sm text-muted">@{currentUser.userName}</p>
-            <p className="text-xs text-muted/60 mt-1">{currentUser.email}</p>
+            <p className="mt-1 text-xs text-muted/60">{currentUser.email}</p>
+            {avatarFile && (
+              <p className="mt-1 text-xs text-accent">New avatar selected</p>
+            )}
           </div>
         </div>
 
@@ -130,10 +188,14 @@ function SettingsPage() {
 
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || uploading}
             className="btn-primary rounded-2xl px-8 py-3 text-sm font-semibold transition-all disabled:opacity-50"
           >
-            {saving ? "Saving..." : "Save Changes"}
+            {uploading
+              ? "Uploading avatar..."
+              : saving
+                ? "Saving..."
+                : "Save Changes"}
           </button>
         </form>
       </div>

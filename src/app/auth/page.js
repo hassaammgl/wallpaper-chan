@@ -49,6 +49,10 @@ function AuthPage() {
           return;
         }
         const user = res.data?.user;
+        if (user?.blocked) {
+          setError("This account has been blocked. Contact support.");
+          return;
+        }
         setCurrentUser(user);
       }
       router.push("/");

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "@/components/Image/Image";
 import apiRequest from "@/lib/apiRequest";
 import { format } from "timeago.js";
-import { HiMagnifyingGlass, HiTrash } from "react-icons/hi2";
+import { HiMagnifyingGlass, HiTrash, HiNoSymbol } from "react-icons/hi2";
 
 function PinsPage() {
   const [page, setPage] = useState(1);
@@ -78,7 +78,11 @@ function PinsPage() {
           {data?.pins?.map((pin) => (
             <div
               key={pin._id}
-              className="overflow-hidden rounded-[20px] border border-line glass"
+              className={`overflow-hidden rounded-[20px] border glass ${
+                pin.userBlocked
+                  ? "border-danger/50 opacity-60"
+                  : "border-line"
+              }`}
             >
               <Image
                 path={pin.media}
@@ -90,6 +94,12 @@ function PinsPage() {
                 <p className="truncate text-xs text-muted">
                   @{pin.user?.userName} ·{" "}
                   {pin.resolution || `${pin.width}x${pin.height}`}
+                  {pin.userBlocked && (
+                    <span className="ml-2 inline-flex items-center gap-0.5 text-danger">
+                      <HiNoSymbol size={10} />
+                      Blocked user
+                    </span>
+                  )}
                 </p>
                 <div className="flex flex-wrap gap-1">
                   {pin.deviceType && (

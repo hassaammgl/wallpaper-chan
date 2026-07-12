@@ -89,12 +89,12 @@ export async function uploadToCloudinary(file, { onProgress } = {}) {
   };
 }
 
-export async function uploadWallpaper(file, { onProgress } = {}) {
+export async function uploadWallpaper(file, { onProgress, folder } = {}) {
   const { data: configRes } = await apiRequest.get("/api/upload/config");
   const provider = configRes.data.data.provider;
 
   if (provider === "cloudinary") {
     return uploadToCloudinary(file, { onProgress });
   }
-  return uploadToImageKit(file, { onProgress });
+  return uploadToImageKit(file, { onProgress, folder });
 }

@@ -4,7 +4,12 @@ import { useState, useEffect } from "react";
 import Image from "@/components/Image/Image";
 import apiRequest from "@/lib/apiRequest";
 import { format } from "timeago.js";
-import { HiMagnifyingGlass, HiTrash } from "react-icons/hi2";
+import {
+  HiMagnifyingGlass,
+  HiTrash,
+  HiNoSymbol,
+  HiCheckCircle,
+} from "react-icons/hi2";
 
 function UsersPage() {
   const [page, setPage] = useState(1);
@@ -49,6 +54,17 @@ function UsersPage() {
     }
   };
 
+  const handleToggleBlock = async (id, blocked) => {
+    const action = blocked ? "unblock" : "block";
+    if (!confirm(`Are you sure you want to ${action} this user?`)) return;
+    try {
+      await apiRequest.patch(`/api/admin/users/${id}`, { blocked: !blocked });
+      fetchUsers();
+    } catch {
+      // ignore
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!confirm("Delete this user? All their data will be removed.")) return;
     try {
@@ -82,12 +98,13 @@ function UsersPage() {
       </form>
 
       <div className="overflow-x-auto rounded-[20px] border border-line glass">
-        <table className="w-full min-w-[640px] text-left text-sm">
+        <table className="w-full min-w-[720px] text-left text-sm">
           <thead className="border-b border-line bg-panel/80 text-xs uppercase tracking-wider text-muted">
             <tr>
               <th className="px-4 py-3">User</th>
               <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Role</th>
+              <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Joined</th>
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
@@ -95,7 +112,7 @@ function UsersPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-muted">
+                <td colSpan={6} className="px-4 py-8 text-center text-muted">
                   Loading...
                 </td>
               </tr>
@@ -103,7 +120,9 @@ function UsersPage() {
               data?.users?.map((user) => (
                 <tr
                   key={user._id}
-                  className="border-b border-line/50 hover:bg-panel/40"
+                  className={`border-b border-line/50 hover:bg-panel/40 ${
+                    user.blocked ? "opacity-50" : ""
+                  }`}
                 >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
@@ -132,16 +151,44 @@ function UsersPage() {
                       <option value="admin">admin</option>
                     </select>
                   </td>
+                  <td className="px-4 py-3">
+                    {user.blocked ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-danger">
+                        <HiNoSymbol size={10} />
+                        Blocked
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-parrot/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-parrot">
+                        <HiCheckCircle size={10} />
+                        Active
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-muted">
                     {format(user.createdAt)}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => handleDelete(user._id)}
-                      className="rounded-lg p-2 text-muted transition-colors hover:bg-danger/10 hover:text-danger"
-                    >
-                      <HiTrash size={16} />
-                    </button>
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() =>
+                          handleToggleBlock(user._id, user.blocked)
+                        }
+                        title={user.blocked ? "Unblock user" : "Block user"}
+                        className={`rounded-lg p-2 transition-colors ${
+                          user.blocked
+                            ? "text-parrot hover:bg-parrot/10"
+                            : "text-muted hover:bg-danger/10 hover:text-danger"
+                        }`}
+                      >
+                        <HiNoSymbol size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(user._id)}
+                        className="rounded-lg p-2 text-muted transition-colors hover:bg-danger/10 hover:text-danger"
+                      >
+                        <HiTrash size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
