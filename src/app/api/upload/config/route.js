@@ -16,7 +16,7 @@ export async function GET() {
       data: {
         provider: settings.uploadProvider,
         imagekit: {
-          publicKey: process.env.NEXT_PUBLIC_IK_PUBLIC_KEY,
+          publicKey: process.env.IK_PUBLIC_KEY,
           urlEndpoint: process.env.NEXT_PUBLIC_IK_URL_ENDPOINT,
         },
         cloudinary: {

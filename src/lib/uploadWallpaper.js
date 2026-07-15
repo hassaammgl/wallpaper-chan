@@ -11,6 +11,7 @@ export async function uploadToImageKit(file, { folder = "/wallpapers", onProgres
   const { token, signature, expire } = authRes.data.data;
 
   const publicKey = pk || configRes.data.data.imagekit?.publicKey || process.env.NEXT_PUBLIC_IK_PUBLIC_KEY;
+  const urlEndpoint = configRes?.data?.data?.imagekit?.urlEndpoint || process.env.NEXT_PUBLIC_IK_URL_ENDPOINT;
 
   const result = await upload({
     file,
@@ -18,6 +19,7 @@ export async function uploadToImageKit(file, { folder = "/wallpapers", onProgres
     folder,
     useUniqueFileName: true,
     publicKey,
+    urlEndpoint,
     token,
     signature,
     expire,
