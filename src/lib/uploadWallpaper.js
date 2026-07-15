@@ -8,7 +8,7 @@ export async function uploadToImageKit(file, { folder = "/wallpapers", onProgres
     apiRequest.get("/api/upload/auth"),
     pk ? null : apiRequest.get("/api/upload/config"),
   ]);
-  const { token, signature, expire } = authRes.data;
+  const { token, signature, expire } = authRes.data.data;
 
   const publicKey = pk || configRes.data.data.imagekit?.publicKey || process.env.NEXT_PUBLIC_IK_PUBLIC_KEY;
 
