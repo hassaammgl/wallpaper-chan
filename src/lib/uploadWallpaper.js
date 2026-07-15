@@ -3,14 +3,14 @@
 import { upload } from "@imagekit/javascript";
 import apiRequest from "./apiRequest";
 
-export async function uploadToImageKit(file, { folder = "/wallpapers", onProgress } = {}) {
-  const { data: authRes } = await apiRequest.get("/api/upload/auth");
+export async function uploadToImageKit(file, { folder = "/wallpapers", onProgress, publicKey: pk } = {}) {
+  const [authRes, configRes] = await Promise.all([
+    apiRequest.get("/api/upload/auth"),
+    pk ? null : apiRequest.get("/api/upload/config"),
+  ]);
   const { token, signature, expire } = authRes.data;
 
-  const configRes = await apiRequest.get("/api/upload/config");
-  const publicKey =
-    configRes.data.data.imagekit?.publicKey ||
-    process.env.NEXT_PUBLIC_IK_PUBLIC_KEY;
+  const publicKey = pk || configRes.data.data.imagekit?.publicKey || process.env.NEXT_PUBLIC_IK_PUBLIC_KEY;
 
   const result = await upload({
     file,
@@ -91,10 +91,10 @@ export async function uploadToCloudinary(file, { onProgress } = {}) {
 
 export async function uploadWallpaper(file, { onProgress, folder } = {}) {
   const { data: configRes } = await apiRequest.get("/api/upload/config");
-  const provider = configRes.data.data.provider;
+  const { provider, imagekit } = configRes.data;
 
   if (provider === "cloudinary") {
     return uploadToCloudinary(file, { onProgress });
   }
-  return uploadToImageKit(file, { onProgress, folder });
+  return uploadToImageKit(file, { onProgress, folder, publicKey: imagekit?.publicKey });
 }
