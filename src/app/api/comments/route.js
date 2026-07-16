@@ -10,15 +10,17 @@ export async function GET(request) {
     await connectDB();
     const { searchParams } = new URL(request.url);
     const pinId = searchParams.get("pinId");
+    const albumId = searchParams.get("albumId");
 
-    if (!pinId) {
+    if (!pinId && !albumId) {
       return Response.json(
-        { success: false, message: "pinId is required" },
+        { success: false, message: "pinId or albumId is required" },
         { status: 400 }
       );
     }
 
-    const comments = await Comment.find({ pin: pinId }).sort({ createdAt: -1 });
+    const query = pinId ? { pin: pinId } : { album: albumId };
+    const comments = await Comment.find(query).sort({ createdAt: -1 });
     const withUsers = await enrichWithUsers(comments);
 
     return Response.json(withUsers);
@@ -41,11 +43,26 @@ export async function POST(request) {
     }
 
     await connectDB();
-    const { description, pin } = await request.json();
+    const { description, pin, album } = await request.json();
+
+    if (!description?.trim()) {
+      return Response.json(
+        { success: false, message: "Description is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!pin && !album) {
+      return Response.json(
+        { success: false, message: "pin or album is required" },
+        { status: 400 }
+      );
+    }
 
     const comment = await Comment.create({
-      description,
-      pin,
+      description: description.trim(),
+      pin: pin || null,
+      album: album || null,
       user: session.user.id,
     });
 

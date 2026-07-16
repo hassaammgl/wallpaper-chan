@@ -13,10 +13,15 @@ export async function GET(request, { params }) {
 
     const boardsWithPins = await Promise.all(
       boards.map(async (board) => {
-        const pinCount = await Pin.countDocuments({ board: board.title, user: userId });
-        const firstPin = await Pin.findOne({ board: board.title, user: userId })
+        const boardId = board._id.toString();
+        const pinQuery = {
+          user: userId,
+          $or: [{ board: boardId }, { board: board.title }],
+        };
+        const pinCount = await Pin.countDocuments(pinQuery);
+        const firstPin = await Pin.findOne(pinQuery)
           .sort({ createdAt: -1 })
-          .select("media uploadProvider");
+          .select("media uploadProvider width height");
 
         return {
           ...board.toObject(),
@@ -29,7 +34,7 @@ export async function GET(request, { params }) {
     return Response.json(boardsWithPins);
   } catch (error) {
     return Response.json(
-      { success: false, message: "Failed to fetch boards" },
+      { success: false, message: "Failed to fetch albums" },
       { status: 500 }
     );
   }

@@ -19,9 +19,9 @@ function SearchContent() {
               <HiRectangleStack size={20} />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-fog">Board collection</h1>
+              <h1 className="text-2xl font-bold text-fog">Album</h1>
               <p className="text-sm text-muted">
-                Browsing saved pins in this board
+                Browsing wallpapers in this album
               </p>
             </div>
           </>

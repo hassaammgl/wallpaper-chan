@@ -4,8 +4,10 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Image from "@/components/Image/Image";
 import Gallery from "@/components/gallery/gallery";
-import Boards from "@/components/boards/Boards";
+import Albums from "@/components/albums/Albums";
+import { SavedPins, HistoryFeed } from "@/components/albums/SavedHistory";
 import apiRequest from "@/lib/apiRequest";
+import useAuthStore from "@/stores/authStore";
 import {
   HiShare,
   HiEllipsisHorizontal,
@@ -43,12 +45,26 @@ function FollowButton({ isFollowing, userName, onFollowChange }) {
   );
 }
 
+const TABS = [
+  { key: "created", label: "Created" },
+  { key: "albums", label: "Albums" },
+  { key: "saved", label: "Saved" },
+  { key: "history", label: "History" },
+];
+
 function ProfilePage() {
   const { userName } = useParams();
+  const { currentUser } = useAuthStore();
   const [type, setType] = useState("created");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const isOwner = currentUser?.id === data?._id;
+
+  const visibleTabs = TABS.filter(
+    (tab) => tab.key === "created" || tab.key === "albums" || isOwner
+  );
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -67,6 +83,12 @@ function ProfilePage() {
     fetchProfile();
   }, [userName]);
 
+  useEffect(() => {
+    if (!isOwner && (type === "saved" || type === "history")) {
+      setType("created");
+    }
+  }, [isOwner, type]);
+
   if (loading) {
     return (
       <div className="flex flex-col items-center gap-4 py-12 animate-pulse">
@@ -82,7 +104,6 @@ function ProfilePage() {
 
   return (
     <div className="space-y-8 animate-fade-up">
-      {/* Profile header card */}
       <div className="relative overflow-hidden rounded-[28px] border border-line glass p-8 md:p-10">
         <div className="absolute inset-0 bg-linear-to-br from-parrot/10 via-transparent to-lime/8" />
 
@@ -109,16 +130,12 @@ function ProfilePage() {
 
           <div className="flex items-center gap-6 text-sm">
             <div className="text-center">
-              <p className="text-xl font-bold text-fog">
-                {data.followerCounts}
-              </p>
+              <p className="text-xl font-bold text-fog">{data.followerCounts}</p>
               <p className="text-muted">Followers</p>
             </div>
             <div className="h-8 w-px bg-line" />
             <div className="text-center">
-              <p className="text-xl font-bold text-fog">
-                {data.followingCounts}
-              </p>
+              <p className="text-xl font-bold text-fog">{data.followingCounts}</p>
               <p className="text-muted">Following</p>
             </div>
           </div>
@@ -127,11 +144,13 @@ function ProfilePage() {
             <button className="rounded-full border border-line bg-panel px-6 py-2.5 text-sm font-medium text-fog transition-colors hover:bg-panel-hover">
               Message
             </button>
-            <FollowButton
-              isFollowing={data.isFollowing}
-              userName={data.userName}
-              onFollowChange={fetchProfile}
-            />
+            {!isOwner && (
+              <FollowButton
+                isFollowing={data.isFollowing}
+                userName={data.userName}
+                onFollowChange={fetchProfile}
+              />
+            )}
             <button className="flex h-10 w-10 items-center justify-center rounded-full border border-line text-muted transition-colors hover:bg-panel-hover hover:text-fog">
               <HiShare size={18} />
             </button>
@@ -142,28 +161,28 @@ function ProfilePage() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 rounded-2xl border border-line bg-panel/50 p-1 w-fit">
-        {["created", "saved"].map((tab) => (
+      <div className="flex flex-wrap gap-1 rounded-2xl border border-line bg-panel/50 p-1 w-fit">
+        {visibleTabs.map((tab) => (
           <button
-            key={tab}
-            onClick={() => setType(tab)}
-            className={`rounded-xl px-6 py-2.5 text-sm font-medium capitalize transition-all ${
-              type === tab
+            key={tab.key}
+            onClick={() => setType(tab.key)}
+            className={`rounded-xl px-5 py-2.5 text-sm font-medium transition-all ${
+              type === tab.key
                 ? "bg-accent-soft text-accent shadow-sm"
                 : "text-muted hover:text-fog"
             }`}
           >
-            {tab}
+            {tab.label}
           </button>
         ))}
       </div>
 
-      {type === "created" ? (
-        <Gallery userId={data._id} />
-      ) : (
-        <Boards userId={data._id} />
+      {type === "created" && <Gallery userId={data._id} />}
+      {type === "albums" && (
+        <Albums userId={data._id} isOwner={isOwner} />
       )}
+      {type === "saved" && isOwner && <SavedPins userId={data._id} />}
+      {type === "history" && isOwner && <HistoryFeed userId={data._id} />}
     </div>
   );
 }

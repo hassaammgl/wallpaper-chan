@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import apiRequest from "@/lib/apiRequest";
-import { HiFaceSmile, HiPaperAirplane } from "react-icons/hi2";
+import { HiPaperAirplane } from "react-icons/hi2";
 
-function CommentForm({ id, onAdd }) {
+function CommentForm({ pinId, albumId, onAdd }) {
   const [desc, setDesc] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -14,10 +14,11 @@ function CommentForm({ id, onAdd }) {
 
     setLoading(true);
     try {
-      const res = await apiRequest.post("/api/comments", {
-        description: desc,
-        pin: id,
-      });
+      const body = { description: desc };
+      if (pinId) body.pin = pinId;
+      if (albumId) body.album = albumId;
+
+      const res = await apiRequest.post("/api/comments", body);
       onAdd(res.data);
       setDesc("");
     } catch {

@@ -7,7 +7,7 @@ import Image from "@/components/Image/Image";
 import PostInteractions from "@/components/postInteractions/PostInteractions";
 import Comments from "@/components/comments/Comments";
 import apiRequest from "@/lib/apiRequest";
-import { HiArrowLeft, HiArrowDownTray, HiDevicePhoneMobile, HiComputerDesktop, HiSparkles } from "react-icons/hi2";
+import { HiArrowLeft, HiArrowDownTray, HiDevicePhoneMobile, HiComputerDesktop, HiSparkles, HiRectangleStack } from "react-icons/hi2";
 
 function PinPage() {
   const { id } = useParams();
@@ -21,6 +21,7 @@ function PinPage() {
       try {
         const res = await apiRequest.get(`/api/pins/${id}`);
         setData(res.data);
+        apiRequest.post("/api/history", { pinId: id }).catch(() => {});
       } catch (err) {
         setError(err.message);
       } finally {
@@ -128,6 +129,16 @@ function PinPage() {
             </div>
           )}
 
+          {data?.album && (
+            <Link
+              href={`/albums/${data.album._id}`}
+              className="flex items-center gap-2 rounded-2xl border border-line bg-panel/50 px-3 py-2 text-sm text-muted transition-colors hover:border-accent/30 hover:text-fog"
+            >
+              <HiRectangleStack size={16} className="text-accent" />
+              {data.album.title}
+            </Link>
+          )}
+
           {data?.user ? (
             <Link
               href={`/${data.user.userName}`}
@@ -170,7 +181,7 @@ function PinPage() {
             </div>
           )}
 
-          <Comments id={data._id} />
+          <Comments pinId={data._id} />
         </div>
       </div>
     </div>

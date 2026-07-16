@@ -5,14 +5,16 @@ import apiRequest from "@/lib/apiRequest";
 import Comment from "./comment";
 import CommentForm from "./commentForm";
 
-function Comments({ id }) {
+function Comments({ pinId, albumId }) {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const query = pinId ? `pinId=${pinId}` : `albumId=${albumId}`;
+
   const fetchComments = async () => {
     try {
-      const res = await apiRequest.get(`/api/comments?pinId=${id}`);
+      const res = await apiRequest.get(`/api/comments?${query}`);
       setComments(res.data);
     } catch (err) {
       setError(err.message);
@@ -23,7 +25,7 @@ function Comments({ id }) {
 
   useEffect(() => {
     fetchComments();
-  }, [id]);
+  }, [pinId, albumId]);
 
   if (loading) {
     return (
@@ -56,7 +58,7 @@ function Comments({ id }) {
           <Comment
             key={comment._id}
             comment={comment}
-            pinId={id}
+            pinId={pinId}
             onDelete={(commentId) =>
               setComments((prev) => prev.filter((c) => c._id !== commentId))
             }
@@ -64,7 +66,8 @@ function Comments({ id }) {
         ))}
       </div>
       <CommentForm
-        id={id}
+        pinId={pinId}
+        albumId={albumId}
         onAdd={(newComment) =>
           setComments((prev) => [newComment, ...prev])
         }

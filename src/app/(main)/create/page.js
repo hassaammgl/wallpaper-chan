@@ -46,6 +46,8 @@ function CreatePage() {
   const [selectedTags, setSelectedTags] = useState([]);
   const [previewImg, setPreviewImg] = useState({ url: "", width: 0, height: 0 });
   const [uploadedMedia, setUploadedMedia] = useState(null);
+  const [albums, setAlbums] = useState([]);
+  const [selectedAlbum, setSelectedAlbum] = useState("");
 
   useEffect(() => {
     if (!currentUser) router.push("/auth");
@@ -57,6 +59,14 @@ function CreatePage() {
       .then((res) => setUploadProvider(res.data.data.provider))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    apiRequest
+      .get(`/api/boards/${currentUser.id}`)
+      .then((res) => setAlbums(res.data))
+      .catch(() => {});
+  }, [currentUser?.id]);
 
   useEffect(() => {
     if (file) {
@@ -110,7 +120,7 @@ function CreatePage() {
         description: formData.get("description"),
         prompt: formData.get("prompt") || null,
         link: formData.get("link") || null,
-        board: formData.get("board") || "general",
+        board: selectedAlbum || null,
         tags: allTags.join(","),
         media: mediaData.filePath,
         originalMedia: mediaData.originalMedia,
@@ -371,6 +381,30 @@ function CreatePage() {
             </div>
 
             <div className="space-y-1.5">
+              <label htmlFor="album" className="text-xs font-medium text-muted">
+                Album
+              </label>
+              <select
+                id="album"
+                value={selectedAlbum}
+                onChange={(e) => setSelectedAlbum(e.target.value)}
+                className={inputClass}
+              >
+                <option value="">No album (uncategorized)</option>
+                {albums.map((album) => (
+                  <option key={album._id} value={album._id}>
+                    {album.title}
+                  </option>
+                ))}
+              </select>
+              {albums.length === 0 && (
+                <p className="text-xs text-muted">
+                  Create an album from your profile to group wallpapers
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
               <label htmlFor="link" className="text-xs font-medium text-muted">
                 Source link
               </label>
@@ -382,8 +416,6 @@ function CreatePage() {
                 className={inputClass}
               />
             </div>
-
-            <input type="hidden" name="board" value="general" />
 
             <button
               type="button"

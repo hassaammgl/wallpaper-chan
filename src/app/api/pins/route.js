@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import connectDB from "@/lib/db";
 import Pin from "@/lib/models/pin.model";
+import Board from "@/lib/models/board.model";
 import { getSession } from "@/lib/getSession";
 import { enrichWithUsers, getBlockedUserIds } from "@/lib/users";
 
@@ -24,7 +25,14 @@ export async function GET(request) {
         { category: { $regex: search, $options: "i" } },
       ];
     }
-    if (boardId) query.board = boardId;
+    if (boardId) {
+      const board = await Board.findById(boardId);
+      if (board) {
+        query.$or = [{ board: boardId }, { board: board.title }];
+      } else {
+        query.board = boardId;
+      }
+    }
     if (deviceType) query.deviceType = deviceType;
 
     try {
@@ -106,7 +114,7 @@ export async function POST(request) {
       description,
       prompt: prompt || null,
       link,
-      board: board || "general",
+      board: board || null,
       tags: tagsArray,
       media,
       originalMedia,
