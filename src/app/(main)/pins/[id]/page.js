@@ -134,7 +134,7 @@ function PinPage() {
               className="flex items-center gap-3 rounded-2xl border border-line bg-panel/50 p-3 transition-colors hover:bg-panel-hover"
             >
               <Image
-                path={data.user.img || "/general/noAvatar.png"}
+                path={data.user.img || "/general/noAvatar.svg"}
                 alt={data.user.displayName || data.user.userName || "User avatar"}
                 w={40}
                 h={40}

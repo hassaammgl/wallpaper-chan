@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import connectDB from "@/lib/db";
 import { getSession } from "@/lib/getSession";
 import Comment from "@/lib/models/comment.model";
+import { enrichWithUsers } from "@/lib/users";
 
 export async function GET(request) {
   try {
@@ -25,12 +26,13 @@ export async function GET(request) {
     const comments = await Comment.find()
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
-      .limit(limit)
-      .populate("user", "displayName userName img");
+      .limit(limit);
+
+    const withUsers = await enrichWithUsers(comments);
 
     return Response.json({
       success: true,
-      data: { comments, pages, total },
+      data: { comments: withUsers, pages, total },
     });
   } catch (error) {
     return Response.json(

@@ -1,8 +1,7 @@
 export const dynamic = "force-dynamic";
 
-import connectDB from "@/lib/db";
 import { getSession } from "@/lib/getSession";
-import { getAuth } from "@/lib/auth";
+import { listUsers } from "@/lib/users";
 
 export async function GET(request) {
   try {
@@ -19,31 +18,12 @@ export async function GET(request) {
     const limit = Number(searchParams.get("limit") || 15);
     const search = searchParams.get("search");
 
-    const query = {};
-    if (search) {
-      query.$or = [
-        { userName: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { displayName: { $regex: search, $options: "i" } },
-      ];
-    }
-
-    const result = await (await getAuth()).api.listUsers({
-      query: { ...query, limit, offset: (page - 1) * limit },
+    const { users, total } = await listUsers({
+      search,
+      limit,
+      offset: (page - 1) * limit,
     });
 
-    const users = (result.users || []).map((u) => ({
-      _id: u.id,
-      displayName: u.displayName || u.name,
-      userName: u.userName,
-      email: u.email,
-      img: u.img,
-      role: u.role,
-      blocked: u.blocked || false,
-      createdAt: u.createdAt,
-    }));
-
-    const total = result.total || 0;
     const pages = Math.ceil(total / limit);
 
     return Response.json({

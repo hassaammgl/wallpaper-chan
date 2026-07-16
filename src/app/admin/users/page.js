@@ -127,7 +127,7 @@ function UsersPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <Image
-                        path={user.img || "/general/noAvatar.png"}
+                        path={user.img || "/general/noAvatar.svg"}
                         alt={user.displayName || user.userName || "User avatar"}
                         w={32}
                         h={32}

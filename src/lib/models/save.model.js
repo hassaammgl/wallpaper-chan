@@ -7,11 +7,7 @@ const saveSchema = new mongoose.Schema(
       ref: "Pin",
       required: true,
     },
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
+    user: { type: String, required: true },
   },
   { timestamps: true }
 );

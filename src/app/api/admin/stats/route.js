@@ -2,13 +2,13 @@ export const dynamic = "force-dynamic";
 
 import connectDB from "@/lib/db";
 import { getSession } from "@/lib/getSession";
-import { getAuth } from "@/lib/auth";
 import Pin from "@/lib/models/pin.model";
 import Comment from "@/lib/models/comment.model";
 import Board from "@/lib/models/board.model";
 import Like from "@/lib/models/like.model";
 import Follow from "@/lib/models/follow.model";
 import Save from "@/lib/models/save.model";
+import { countUsers, enrichWithUsers, listUsers } from "@/lib/users";
 
 export async function GET() {
   try {
@@ -24,7 +24,7 @@ export async function GET() {
 
     const [usersRes, pins, comments, boards, likes, follows, saves] =
       await Promise.all([
-        (await getAuth()).api.listUsers({ query: { limit: 5 } }),
+        listUsers({ limit: 5, offset: 0 }),
         Pin.countDocuments(),
         Comment.countDocuments(),
         Board.countDocuments(),
@@ -33,26 +33,14 @@ export async function GET() {
         Save.countDocuments(),
       ]);
 
-    const recentUsers = (usersRes.users || []).map((u) => ({
-      _id: u.id,
-      displayName: u.displayName || u.name,
-      userName: u.userName,
-      email: u.email,
-      img: u.img,
-      role: u.role,
-      createdAt: u.createdAt,
-    }));
-
-    const recentPins = await Pin.find()
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .populate("user", "displayName userName img");
+    const recentPins = await Pin.find().sort({ createdAt: -1 }).limit(5);
+    const recentPinsWithUsers = await enrichWithUsers(recentPins);
 
     return Response.json({
       success: true,
       data: {
         totals: {
-          users: usersRes.total || recentUsers.length,
+          users: usersRes.total || (await countUsers()),
           pins,
           comments,
           boards,
@@ -60,8 +48,8 @@ export async function GET() {
           follows,
           saves,
         },
-        recentUsers,
-        recentPins,
+        recentUsers: usersRes.users,
+        recentPins: recentPinsWithUsers,
       },
     });
   } catch (error) {

@@ -91,7 +91,7 @@ function DashboardPage() {
                 className="flex items-center gap-3 rounded-xl bg-panel/50 p-3"
               >
                 <Image
-                  path={user.img || "/general/noAvatar.png"}
+                  path={user.img || "/general/noAvatar.svg"}
                   alt={user.displayName || user.userName || "User avatar"}
                   w={36}
                   h={36}

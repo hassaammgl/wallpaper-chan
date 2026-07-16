@@ -25,11 +25,7 @@ const pinSchema = new mongoose.Schema(
     link: { type: String },
     board: { type: String, required: true },
     tags: { type: [String] },
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
+    user: { type: String, required: true },
   },
   { timestamps: true }
 );

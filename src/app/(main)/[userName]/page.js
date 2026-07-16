@@ -45,17 +45,19 @@ function FollowButton({ isFollowing, userName, onFollowChange }) {
 
 function ProfilePage() {
   const { userName } = useParams();
-  const [type, setType] = useState("saved");
+  const [type, setType] = useState("created");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const fetchProfile = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const res = await apiRequest.get(`/api/users/${userName}`);
       setData(res.data);
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }
@@ -89,7 +91,7 @@ function ProfilePage() {
             <Image
               w={112}
               h={112}
-              path={data.img || "/general/noAvatar.png"}
+              path={data.img || "/general/noAvatar.svg"}
               alt={data.displayName}
               className="h-28 w-28 rounded-full object-cover ring-4 ring-accent/25 shadow-2xl shadow-accent/15"
             />

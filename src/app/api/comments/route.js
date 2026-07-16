@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import connectDB from "@/lib/db";
 import Comment from "@/lib/models/comment.model";
 import { getSession } from "@/lib/getSession";
+import { enrichWithUsers } from "@/lib/users";
 
 export async function GET(request) {
   try {
@@ -17,11 +18,10 @@ export async function GET(request) {
       );
     }
 
-    const comments = await Comment.find({ pin: pinId })
-      .sort({ createdAt: -1 })
-      .populate("user", "displayName userName img");
+    const comments = await Comment.find({ pin: pinId }).sort({ createdAt: -1 });
+    const withUsers = await enrichWithUsers(comments);
 
-    return Response.json(comments);
+    return Response.json(withUsers);
   } catch (error) {
     return Response.json(
       { success: false, message: "Failed to fetch comments" },
@@ -49,12 +49,8 @@ export async function POST(request) {
       user: session.user.id,
     });
 
-    const populated = await Comment.findById(comment._id).populate(
-      "user",
-      "displayName userName img"
-    );
-
-    return Response.json(populated, { status: 201 });
+    const [withUser] = await enrichWithUsers([comment]);
+    return Response.json(withUser, { status: 201 });
   } catch (error) {
     return Response.json(
       { success: false, message: "Failed to add comment" },

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "@/components/Image/Image";
+import { useSession } from "@/lib/auth-client";
 import useAuthStore from "@/stores/authStore";
 import apiRequest from "@/lib/apiRequest";
 import { uploadWallpaper } from "@/lib/uploadWallpaper";
@@ -14,20 +15,27 @@ import {
 } from "react-icons/hi2";
 
 function SettingsPage() {
+  const { data: session, isPending } = useSession();
   const { currentUser, updateCurrentUser } = useAuthStore();
   const router = useRouter();
   const fileInputRef = useRef();
 
-  const [displayName, setDisplayName] = useState(
-    currentUser?.displayName || ""
-  );
-  const [userName, setUserName] = useState(currentUser?.userName || "");
+  const user = currentUser || session?.user;
+
+  const [displayName, setDisplayName] = useState("");
+  const [userName, setUserName] = useState("");
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [avatarFile, setAvatarFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!user) return;
+    setDisplayName(user.displayName || user.name || "");
+    setUserName(user.userName || "");
+  }, [user]);
 
   const handleAvatarSelect = (e) => {
     const file = e.target.files?.[0];
@@ -43,23 +51,26 @@ function SettingsPage() {
     setError(null);
 
     try {
-      let imgPath = currentUser?.img || null;
+      let imgPath = user?.img || null;
 
       if (avatarFile) {
         setUploading(true);
-        const mediaData = await uploadWallpaper(avatarFile, { folder: "/avatars" });
+        const mediaData = await uploadWallpaper(avatarFile, {
+          folder: "/avatars",
+        });
         imgPath = mediaData.filePath;
         setUploading(false);
       }
 
       const fields = { displayName, userName };
-      if (imgPath !== currentUser?.img) {
+      if (imgPath !== user?.img) {
         fields.img = imgPath;
       }
 
       await apiRequest.patch("/api/user", fields);
-      updateCurrentUser({ ...currentUser, ...fields });
+      updateCurrentUser({ ...user, ...fields });
       setAvatarFile(null);
+      setAvatarPreview(null);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
@@ -72,7 +83,15 @@ function SettingsPage() {
     }
   };
 
-  if (!currentUser) {
+  if (isPending) {
+    return (
+      <div className="flex justify-center py-20">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-line border-t-accent" />
+      </div>
+    );
+  }
+
+  if (!user) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20">
         <p className="text-lg text-muted">Sign in to access settings</p>
@@ -86,8 +105,6 @@ function SettingsPage() {
     );
   }
 
-  const displayImg = avatarPreview || currentUser.img || "/general/noAvatar.png";
-
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <div>
@@ -100,9 +117,7 @@ function SettingsPage() {
         </h1>
       </div>
 
-      {/* Profile Card */}
       <div className="rounded-[28px] border border-line glass p-8">
-        {/* Avatar Upload */}
         <div className="mb-8 flex items-center gap-5">
           <button
             type="button"
@@ -119,7 +134,7 @@ function SettingsPage() {
               />
             ) : (
               <Image
-                path={currentUser.img || "/general/noAvatar.png"}
+                path={user.img || "/general/noAvatar.svg"}
                 alt="avatar"
                 w={80}
                 h={80}
@@ -139,10 +154,10 @@ function SettingsPage() {
           </button>
           <div>
             <h2 className="text-xl font-bold text-fog">
-              {currentUser.displayName || currentUser.userName}
+              {user.displayName || user.userName}
             </h2>
-            <p className="text-sm text-muted">@{currentUser.userName}</p>
-            <p className="mt-1 text-xs text-muted/60">{currentUser.email}</p>
+            <p className="text-sm text-muted">@{user.userName}</p>
+            <p className="mt-1 text-xs text-muted/60">{user.email}</p>
             {avatarFile && (
               <p className="mt-1 text-xs text-accent">New avatar selected</p>
             )}

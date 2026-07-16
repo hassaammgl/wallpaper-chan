@@ -1,30 +1,29 @@
 export const dynamic = "force-dynamic";
 
 import connectDB from "@/lib/db";
-import Pin from "@/lib/models/pin.model";
 import Follow from "@/lib/models/follow.model";
 import { getSession } from "@/lib/getSession";
-import { getAuth } from "@/lib/auth";
+import { findUserByUserName } from "@/lib/users";
 
-export async function GET(request, { params }) {
+export async function GET(_request, { params }) {
   try {
     await connectDB();
     const { userName } = await params;
 
-    const user = await (await getAuth()).api.listUsers({
-      query: { userName },
-    });
-
-    if (!user || !user.users || user.users.length === 0) {
+    const userData = await findUserByUserName(userName);
+    if (!userData) {
       return Response.json(
         { success: false, message: "User not found" },
         { status: 404 }
       );
     }
 
-    const userData = user.users[0];
-    const followerCounts = await Follow.countDocuments({ following: userData.id });
-    const followingCounts = await Follow.countDocuments({ follower: userData.id });
+    const followerCounts = await Follow.countDocuments({
+      following: userData.id,
+    });
+    const followingCounts = await Follow.countDocuments({
+      follower: userData.id,
+    });
 
     const session = await getSession();
     let isFollowing = false;
@@ -37,7 +36,7 @@ export async function GET(request, { params }) {
 
     return Response.json({
       _id: userData.id,
-      displayName: userData.displayName || userData.name,
+      displayName: userData.displayName,
       userName: userData.userName,
       img: userData.img,
       followerCounts,

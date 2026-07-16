@@ -35,7 +35,7 @@ function UserButton() {
         className="flex items-center gap-2.5 rounded-[20px] border border-line bg-panel/80 py-1.5 pl-1.5 pr-3 transition-all hover:border-accent/30 hover:bg-panel-hover"
       >
         <Image
-          path={currentUser.img || "/general/noAvatar.png"}
+          path={currentUser.img || "/general/noAvatar.svg"}
           alt="avatar"
           w={36}
           h={36}

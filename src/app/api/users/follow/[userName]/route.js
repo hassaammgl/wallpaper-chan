@@ -3,9 +3,9 @@ export const dynamic = "force-dynamic";
 import connectDB from "@/lib/db";
 import Follow from "@/lib/models/follow.model";
 import { getSession } from "@/lib/getSession";
-import { getAuth } from "@/lib/auth";
+import { findUserByUserName } from "@/lib/users";
 
-export async function POST(request, { params }) {
+export async function POST(_request, { params }) {
   try {
     const session = await getSession();
     if (!session) {
@@ -18,20 +18,15 @@ export async function POST(request, { params }) {
     await connectDB();
     const { userName } = await params;
 
-    const user = await (await getAuth()).api.listUsers({
-      query: { userName },
-    });
-
-    if (!user || !user.users || user.users.length === 0) {
+    const target = await findUserByUserName(userName);
+    if (!target) {
       return Response.json(
         { success: false, message: "User not found" },
         { status: 404 }
       );
     }
 
-    const targetUserId = user.users[0].id;
-
-    if (targetUserId === session.user.id) {
+    if (target.id === session.user.id) {
       return Response.json(
         { success: false, message: "Cannot follow yourself" },
         { status: 400 }
@@ -40,19 +35,19 @@ export async function POST(request, { params }) {
 
     const existing = await Follow.findOne({
       follower: session.user.id,
-      following: targetUserId,
+      following: target.id,
     });
 
     if (existing) {
       await Follow.deleteOne({ _id: existing._id });
       return Response.json({ following: false });
-    } else {
-      await Follow.create({
-        follower: session.user.id,
-        following: targetUserId,
-      });
-      return Response.json({ following: true });
     }
+
+    await Follow.create({
+      follower: session.user.id,
+      following: target.id,
+    });
+    return Response.json({ following: true });
   } catch (error) {
     return Response.json(
       { success: false, message: "Failed to follow" },

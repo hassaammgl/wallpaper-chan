@@ -19,7 +19,7 @@ function Comment({ comment, pinId, onDelete }) {
     <div className="group flex items-start justify-between gap-2">
       <div className="flex flex-1 gap-3">
         <Image
-          path={comment.user?.img || "/general/noAvatar.png"}
+          path={comment.user?.img || "/general/noAvatar.svg"}
           alt={comment.user?.displayName || "User avatar"}
           w={32}
           h={32}

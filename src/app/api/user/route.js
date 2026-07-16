@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import { headers } from "next/headers";
 import { getSession } from "@/lib/getSession";
 import { getAuth } from "@/lib/auth";
 
@@ -14,21 +15,24 @@ export async function PATCH(request) {
     }
 
     const body = await request.json();
-    const allowedFields = {};
-    if (body.displayName !== undefined) allowedFields.displayName = body.displayName;
-    if (body.userName !== undefined) allowedFields.userName = body.userName;
-    if (body.img !== undefined) allowedFields.img = body.img;
+    const updateBody = {};
+    if (body.displayName !== undefined) updateBody.displayName = body.displayName;
+    if (body.userName !== undefined) updateBody.userName = body.userName;
+    if (body.img !== undefined) updateBody.img = body.img;
 
-    if (Object.keys(allowedFields).length === 0) {
+    if (Object.keys(updateBody).length === 0) {
       return Response.json(
         { success: false, message: "No valid fields to update" },
         { status: 400 }
       );
     }
 
+    const headersList = await headers();
+    const plainHeaders = Object.fromEntries(headersList.entries());
+
     await (await getAuth()).api.updateUser({
-      userId: session.user.id,
-      fields: allowedFields,
+      body: updateBody,
+      headers: plainHeaders,
     });
 
     return Response.json({ success: true, message: "Profile updated" });

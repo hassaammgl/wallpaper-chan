@@ -2,13 +2,13 @@ export const dynamic = "force-dynamic";
 
 import connectDB from "@/lib/db";
 import { getSession } from "@/lib/getSession";
-import { getAuth } from "@/lib/auth";
 import Pin from "@/lib/models/pin.model";
 import Comment from "@/lib/models/comment.model";
 import Board from "@/lib/models/board.model";
 import Like from "@/lib/models/like.model";
 import Save from "@/lib/models/save.model";
 import Follow from "@/lib/models/follow.model";
+import { deleteUserById, updateUserById } from "@/lib/users";
 
 export async function PATCH(request, { params }) {
   try {
@@ -26,10 +26,7 @@ export async function PATCH(request, { params }) {
     if (body.role !== undefined) fields.role = body.role;
     if (body.blocked !== undefined) fields.blocked = body.blocked;
 
-    await (await getAuth()).api.updateUser({
-      userId: id,
-      fields,
-    });
+    await updateUserById(id, fields);
 
     return Response.json({ success: true, message: "User updated" });
   } catch (error) {
@@ -40,7 +37,7 @@ export async function PATCH(request, { params }) {
   }
 }
 
-export async function DELETE(request, { params }) {
+export async function DELETE(_request, { params }) {
   try {
     const session = await getSession();
     if (!session || session.user.role !== "admin") {
@@ -53,7 +50,7 @@ export async function DELETE(request, { params }) {
     const { id } = await params;
     await connectDB();
 
-    await (await getAuth()).api.removeUser({ userId: id });
+    await deleteUserById(id);
     await Pin.deleteMany({ user: id });
     await Comment.deleteMany({ user: id });
     await Board.deleteMany({ user: id });

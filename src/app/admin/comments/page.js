@@ -58,7 +58,7 @@ function CommentsPage() {
               className="flex items-start gap-4 rounded-[20px] border border-line glass p-4"
             >
               <Image
-                path={comment.user?.img || "/general/noAvatar.png"}
+                path={comment.user?.img || "/general/noAvatar.svg"}
                 alt={comment.user?.displayName || "User avatar"}
                 w={40}
                 h={40}

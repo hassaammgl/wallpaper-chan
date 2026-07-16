@@ -7,20 +7,23 @@ import { useSession } from "@/lib/auth-client";
 import useAuthStore from "@/stores/authStore";
 
 function MainLayout({ children }) {
-  const { data: session } = useSession();
-  const { currentUser, setCurrentUser, removeCurrentUser } = useAuthStore();
+  const { data: session, isPending } = useSession();
+  const { setCurrentUser, removeCurrentUser } = useAuthStore();
 
   useEffect(() => {
+    if (isPending) return;
+
     if (session?.user) {
       if (session.user.blocked) {
         removeCurrentUser();
         return;
       }
-      if (session.user.id !== currentUser?.id) {
-        setCurrentUser(session.user);
-      }
+      setCurrentUser(session.user);
+      return;
     }
-  }, [session, currentUser?.id, setCurrentUser, removeCurrentUser]);
+
+    removeCurrentUser();
+  }, [session, isPending, setCurrentUser, removeCurrentUser]);
 
   return (
     <div className="mesh-bg min-h-screen">

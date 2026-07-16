@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import connectDB from "@/lib/db";
 import { getSession } from "@/lib/getSession";
 import Pin from "@/lib/models/pin.model";
-import { getAuth } from "@/lib/auth";
+import { enrichWithUsers, getBlockedUserIds, listUsers } from "@/lib/users";
 
 export async function GET(request) {
   try {
@@ -36,18 +36,16 @@ export async function GET(request) {
     const pins = await Pin.find(query)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
-      .limit(limit)
-      .populate("user", "displayName userName img blocked");
+      .limit(limit);
 
-    const auth = await getAuth();
-    const blockedUsers = await auth.api.listUsers({
-      query: { blocked: true, limit: 1000 },
+    const pinsWithUsers = await enrichWithUsers(pins, {
+      fields: ["id", "displayName", "userName", "img", "blocked"],
     });
-    const blockedIds = new Set((blockedUsers.users || []).map((u) => u.id));
+    const blockedIds = new Set(await getBlockedUserIds());
 
-    const pinsWithStatus = pins.map((pin) => ({
-      ...pin.toObject(),
-      userBlocked: pin.user ? blockedIds.has(pin.user._id?.toString() || pin.user.id) : false,
+    const pinsWithStatus = pinsWithUsers.map((pin) => ({
+      ...pin,
+      userBlocked: pin.user?.id ? blockedIds.has(pin.user.id) : false,
     }));
 
     return Response.json({

@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import connectDB from "@/lib/db";
 import Pin from "@/lib/models/pin.model";
 import { getSession } from "@/lib/getSession";
-import { getAuth } from "@/lib/auth";
+import { enrichWithUsers, getBlockedUserIds } from "@/lib/users";
 
 export async function GET(request) {
   try {
@@ -28,11 +28,7 @@ export async function GET(request) {
     if (deviceType) query.deviceType = deviceType;
 
     try {
-      const auth = await getAuth();
-      const blockedUsers = await auth.api.listUsers({
-        query: { blocked: true, limit: 1000 },
-      });
-      const blockedIds = (blockedUsers.users || []).map((u) => u.id);
+      const blockedIds = await getBlockedUserIds();
       if (userId) {
         if (blockedIds.includes(userId)) {
           return Response.json({ pins: [], nextCursor: null });
@@ -48,14 +44,14 @@ export async function GET(request) {
     const pins = await Pin.find(query)
       .sort({ createdAt: -1 })
       .skip(Number(cursor))
-      .limit(limit + 1)
-      .populate("user", "displayName userName img");
+      .limit(limit + 1);
 
     const hasMore = pins.length > limit;
     const result = hasMore ? pins.slice(0, limit) : pins;
+    const pinsWithUsers = await enrichWithUsers(result);
 
     return Response.json({
-      pins: result,
+      pins: pinsWithUsers,
       nextCursor: hasMore ? Number(cursor) + limit : null,
     });
   } catch (error) {
@@ -94,8 +90,6 @@ export async function POST(request) {
       resolution,
       deviceType,
       category,
-      textOptions,
-      canvasOptions,
     } = body;
 
     const tagsArray = tags
