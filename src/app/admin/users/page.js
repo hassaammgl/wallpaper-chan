@@ -17,10 +17,12 @@ function UsersPage() {
   const [query, setQuery] = useState("");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [actionError, setActionError] = useState(null);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
+      setActionError(null);
       const params = new URLSearchParams({
         page: String(page),
         limit: "15",
@@ -28,8 +30,8 @@ function UsersPage() {
       if (query) params.set("search", query);
       const res = await apiRequest.get(`/api/admin/users?${params}`);
       setData(res.data.data);
-    } catch {
-      // ignore
+    } catch (err) {
+      setActionError(err.response?.data?.message || "Failed to load users");
     } finally {
       setLoading(false);
     }
@@ -49,8 +51,8 @@ function UsersPage() {
     try {
       await apiRequest.patch(`/api/admin/users/${id}`, { role });
       fetchUsers();
-    } catch {
-      // ignore
+    } catch (err) {
+      setActionError(err.response?.data?.message || "Failed to update role");
     }
   };
 
@@ -60,8 +62,8 @@ function UsersPage() {
     try {
       await apiRequest.patch(`/api/admin/users/${id}`, { blocked: !blocked });
       fetchUsers();
-    } catch {
-      // ignore
+    } catch (err) {
+      setActionError(err.response?.data?.message || `Failed to ${action} user`);
     }
   };
 
@@ -70,8 +72,8 @@ function UsersPage() {
     try {
       await apiRequest.delete(`/api/admin/users/${id}`);
       fetchUsers();
-    } catch {
-      // ignore
+    } catch (err) {
+      setActionError(err.response?.data?.message || "Failed to delete user");
     }
   };
 
@@ -96,6 +98,12 @@ function UsersPage() {
           Search
         </button>
       </form>
+
+      {actionError && (
+        <div className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+          {actionError}
+        </div>
+      )}
 
       <div className="overflow-x-auto rounded-[20px] border border-line glass">
         <table className="w-full min-w-[720px] text-left text-sm">

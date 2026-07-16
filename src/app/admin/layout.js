@@ -27,18 +27,22 @@ function AdminLayout({ children }) {
   const pathname = usePathname();
   const router = useRouter();
   const { currentUser, removeCurrentUser, setCurrentUser } = useAuthStore();
-  const { data: session } = useSession();
+  const { data: session, isPending } = useSession();
 
   useEffect(() => {
+    if (isPending) return;
+
     if (session?.user) {
       setCurrentUser(session.user);
       if (session.user.role !== "admin") {
-        router.push("/auth");
+        router.replace("/");
       }
-    } else if (!currentUser) {
-      router.push("/auth");
+      return;
     }
-  }, [session, currentUser, router, setCurrentUser]);
+
+    removeCurrentUser();
+    router.replace("/auth");
+  }, [session, isPending, router, setCurrentUser, removeCurrentUser]);
 
   const handleLogout = async () => {
     try {
@@ -48,6 +52,18 @@ function AdminLayout({ children }) {
       router.push("/auth");
     }
   };
+
+  if (isPending) {
+    return (
+      <div className="mesh-bg flex min-h-screen items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-line border-t-accent" />
+      </div>
+    );
+  }
+
+  if (!session?.user || session.user.role !== "admin") {
+    return null;
+  }
 
   return (
     <div className="mesh-bg flex min-h-screen">

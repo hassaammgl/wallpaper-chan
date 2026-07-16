@@ -91,9 +91,32 @@ export async function getBlockedUserIds() {
 
 export async function updateUserById(id, fields) {
   const users = await usersCollection();
-  await users.updateOne(userIdQuery(id), {
-    $set: { ...fields, updatedAt: new Date() },
-  });
+  const update = { ...fields, updatedAt: new Date() };
+
+  if (update.displayName !== undefined) {
+    update.name = update.displayName;
+  }
+
+  if (update.userName !== undefined) {
+    const taken = await users.findOne({ userName: update.userName });
+    if (taken) {
+      const current = await users.findOne(userIdQuery(id));
+      if (!current || taken._id?.toString() !== current._id?.toString()) {
+        const err = new Error("Username already taken");
+        err.status = 409;
+        throw err;
+      }
+    }
+  }
+
+  const result = await users.updateOne(userIdQuery(id), { $set: update });
+  if (result.matchedCount === 0) {
+    const err = new Error("User not found");
+    err.status = 404;
+    throw err;
+  }
+
+  return findUserById(id);
 }
 
 export async function deleteUserById(id) {

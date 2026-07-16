@@ -50,6 +50,21 @@ function SettingsPage() {
     setSuccess(false);
     setError(null);
 
+    const trimmedName = displayName.trim();
+    const trimmedUser = userName.trim();
+
+    if (!trimmedUser) {
+      setError("Username is required");
+      setSaving(false);
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_]{3,30}$/.test(trimmedUser)) {
+      setError("Username must be 3-30 characters (letters, numbers, underscore)");
+      setSaving(false);
+      return;
+    }
+
     try {
       let imgPath = user?.img || null;
 
@@ -62,13 +77,19 @@ function SettingsPage() {
         setUploading(false);
       }
 
-      const fields = { displayName, userName };
+      const fields = {
+        displayName: trimmedName || trimmedUser,
+        userName: trimmedUser,
+      };
       if (imgPath !== user?.img) {
         fields.img = imgPath;
       }
 
-      await apiRequest.patch("/api/user", fields);
-      updateCurrentUser({ ...user, ...fields });
+      const res = await apiRequest.patch("/api/user", fields);
+      const updated = res.data.user || { ...user, ...fields };
+      updateCurrentUser(updated);
+      setDisplayName(updated.displayName || "");
+      setUserName(updated.userName || "");
       setAvatarFile(null);
       setAvatarPreview(null);
       setSuccess(true);

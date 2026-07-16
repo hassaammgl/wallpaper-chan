@@ -26,13 +26,14 @@ export async function PATCH(request, { params }) {
     if (body.role !== undefined) fields.role = body.role;
     if (body.blocked !== undefined) fields.blocked = body.blocked;
 
-    await updateUserById(id, fields);
+    const user = await updateUserById(id, fields);
 
-    return Response.json({ success: true, message: "User updated" });
+    return Response.json({ success: true, message: "User updated", user });
   } catch (error) {
+    const status = error.status || 500;
     return Response.json(
-      { success: false, message: "Failed to update user" },
-      { status: 500 }
+      { success: false, message: error.message || "Failed to update user" },
+      { status }
     );
   }
 }
