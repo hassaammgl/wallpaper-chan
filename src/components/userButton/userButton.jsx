@@ -29,7 +29,7 @@ function UserButton() {
   };
 
   return currentUser ? (
-    <div className="relative max-[475px]:hidden">
+    <div className="relative">
       <button
         onClick={() => setOpen((prev) => !prev)}
         className="flex items-center gap-2.5 rounded-[20px] border border-line bg-panel/80 py-1.5 pl-1.5 pr-3 transition-all hover:border-accent/30 hover:bg-panel-hover"
@@ -37,6 +37,8 @@ function UserButton() {
         <Image
           path={currentUser.img || "/general/noAvatar.png"}
           alt="avatar"
+          w={36}
+          h={36}
           className="h-9 w-9 rounded-xl object-cover ring-2 ring-accent/20"
         />
         <span className="hidden max-w-[100px] truncate text-sm font-medium text-fog lg:block">
@@ -92,7 +94,7 @@ function UserButton() {
   ) : (
     <Link
       href="/auth"
-      className="btn-primary hidden px-5 py-3 text-sm max-[475px]:inline-flex sm:inline-flex"
+      className="btn-primary inline-flex px-5 py-3 text-sm"
     >
       Sign in
     </Link>

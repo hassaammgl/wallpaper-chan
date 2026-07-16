@@ -128,6 +128,9 @@ function UsersPage() {
                     <div className="flex items-center gap-3">
                       <Image
                         path={user.img || "/general/noAvatar.png"}
+                        alt={user.displayName || user.userName || "User avatar"}
+                        w={32}
+                        h={32}
                         className="h-8 w-8 rounded-lg object-cover"
                       />
                       <div>

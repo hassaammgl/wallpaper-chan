@@ -49,10 +49,39 @@ function Gallery({ search, userId, boardId, deviceType }) {
   };
 
   useEffect(() => {
-    setPins([]);
-    setCursor(0);
-    setHasMore(true);
-    fetchPins(true);
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        setLoading(true);
+        setPins([]);
+        setCursor(0);
+        setHasMore(true);
+
+        const params = new URLSearchParams();
+        if (search) params.set("search", search);
+        if (userId) params.set("userId", userId);
+        if (boardId) params.set("boardId", boardId);
+        if (deviceType) params.set("deviceType", deviceType);
+
+        const res = await apiRequest.get(`/api/pins?${params.toString()}`);
+        if (cancelled) return;
+        const data = res.data;
+        setPins(data.pins);
+        setCursor(data.nextCursor);
+        setHasMore(!!data.nextCursor);
+        setError(null);
+      } catch (err) {
+        if (!cancelled) setError(err.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [search, userId, boardId, deviceType]);
 
   useEffect(() => {

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import useAuthStore from "@/stores/authStore";
 import useEditStore from "@/stores/editorStore";
 import Editor from "@/components/editor/editor";
+import Image from "@/components/Image/Image";
 import apiRequest from "@/lib/apiRequest";
 import { uploadWallpaper } from "@/lib/uploadWallpaper";
 import {
@@ -183,9 +184,11 @@ function CreatePage() {
           <div className="rounded-[28px] border border-line glass p-5">
             {previewImg.url ? (
               <div className="relative flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-canvas">
-                <img
+                <Image
                   src={previewImg.url}
                   alt="Preview"
+                  w={previewImg.width || 800}
+                  h={previewImg.height}
                   className="max-h-[420px] w-full object-contain"
                 />
                 {previewImg.width > 0 && (

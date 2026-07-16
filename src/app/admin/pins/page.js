@@ -84,11 +84,15 @@ function PinsPage() {
                   : "border-line"
               }`}
             >
-              <Image
-                path={pin.media}
-                pin={pin}
-                className="aspect-video w-full object-cover"
-              />
+              <div className="relative aspect-video w-full">
+                <Image
+                  path={pin.media}
+                  pin={pin}
+                  alt={pin.title || "Pin preview"}
+                  fill
+                  className="object-cover"
+                />
+              </div>
               <div className="space-y-2 p-4">
                 <h3 className="truncate font-semibold text-fog">{pin.title}</h3>
                 <p className="truncate text-xs text-muted">

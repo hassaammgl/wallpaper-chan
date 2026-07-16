@@ -61,9 +61,11 @@ function Boards({ userId }) {
           <div className="relative aspect-[3/4] overflow-hidden rounded-[20px] ring-1 ring-line transition-all group-hover:-translate-y-1 group-hover:ring-accent/30 group-hover:shadow-xl group-hover:shadow-accent/10">
             {board.firstPin?.media ? (
               <Image
-                src={board.firstPin.media}
-                alt=""
-                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                path={board.firstPin.media}
+                pin={board.firstPin}
+                alt={board.title || "Board cover"}
+                fill
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
               />
             ) : (
               <div className="flex h-full items-center justify-center bg-panel">

@@ -6,7 +6,6 @@ import Image from "@/components/Image/Image";
 import Gallery from "@/components/gallery/gallery";
 import Boards from "@/components/boards/Boards";
 import apiRequest from "@/lib/apiRequest";
-import { useSession } from "@/lib/auth-client";
 import {
   HiShare,
   HiEllipsisHorizontal,
@@ -46,7 +45,6 @@ function FollowButton({ isFollowing, userName, onFollowChange }) {
 
 function ProfilePage() {
   const { userName } = useParams();
-  const { data: session } = useSession();
   const [type, setType] = useState("saved");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);

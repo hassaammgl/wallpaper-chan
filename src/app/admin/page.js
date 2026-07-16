@@ -92,6 +92,9 @@ function DashboardPage() {
               >
                 <Image
                   path={user.img || "/general/noAvatar.png"}
+                  alt={user.displayName || user.userName || "User avatar"}
+                  w={36}
+                  h={36}
                   className="h-9 w-9 rounded-xl object-cover"
                 />
                 <div className="min-w-0 flex-1">
@@ -135,6 +138,9 @@ function DashboardPage() {
                 <Image
                   path={pin.media}
                   pin={pin}
+                  alt={pin.title || "Pin preview"}
+                  w={48}
+                  h={48}
                   className="h-12 w-12 shrink-0 rounded-xl object-cover"
                 />
                 <div className="min-w-0 flex-1">

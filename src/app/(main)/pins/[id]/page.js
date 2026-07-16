@@ -78,7 +78,8 @@ function PinPage() {
             uploadProvider={data.uploadProvider}
             mode="display"
             alt={data.title || ""}
-            w={1200}
+            w={data.width || 1200}
+            h={data.height}
             className="max-h-[70vh] max-w-full rounded-2xl object-contain shadow-2xl shadow-black/40 lg:max-h-full"
           />
         </div>
@@ -134,6 +135,9 @@ function PinPage() {
             >
               <Image
                 path={data.user.img || "/general/noAvatar.png"}
+                alt={data.user.displayName || data.user.userName || "User avatar"}
+                w={40}
+                h={40}
                 className="h-10 w-10 rounded-xl object-cover ring-2 ring-accent/15"
               />
               <div>

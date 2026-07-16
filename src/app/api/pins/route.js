@@ -24,18 +24,25 @@ export async function GET(request) {
         { category: { $regex: search, $options: "i" } },
       ];
     }
-    if (userId) query.user = userId;
     if (boardId) query.board = boardId;
     if (deviceType) query.deviceType = deviceType;
 
-    const auth = await getAuth();
-    const blockedUsers = await auth.api.listUsers({
-      query: { blocked: true, limit: 1000 },
-    });
-    const blockedIds = (blockedUsers.users || []).map((u) => u.id);
-    if (blockedIds.length > 0) {
-      query.user = { $nin: blockedIds };
-      if (userId) query.user = { $nin: blockedIds, $eq: userId };
+    try {
+      const auth = await getAuth();
+      const blockedUsers = await auth.api.listUsers({
+        query: { blocked: true, limit: 1000 },
+      });
+      const blockedIds = (blockedUsers.users || []).map((u) => u.id);
+      if (userId) {
+        if (blockedIds.includes(userId)) {
+          return Response.json({ pins: [], nextCursor: null });
+        }
+        query.user = userId;
+      } else if (blockedIds.length > 0) {
+        query.user = { $nin: blockedIds };
+      }
+    } catch {
+      if (userId) query.user = userId;
     }
 
     const pins = await Pin.find(query)

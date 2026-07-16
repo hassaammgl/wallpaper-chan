@@ -110,15 +110,19 @@ function SettingsPage() {
             className="group relative shrink-0"
           >
             {avatarPreview ? (
-              <img
+              <Image
                 src={avatarPreview}
                 alt="avatar preview"
+                w={80}
+                h={80}
                 className="h-20 w-20 rounded-2xl object-cover ring-4 ring-accent/20"
               />
             ) : (
               <Image
                 path={currentUser.img || "/general/noAvatar.png"}
                 alt="avatar"
+                w={80}
+                h={80}
                 className="h-20 w-20 rounded-2xl object-cover ring-4 ring-accent/20"
               />
             )}

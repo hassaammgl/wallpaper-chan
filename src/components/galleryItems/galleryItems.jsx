@@ -8,7 +8,7 @@ function GalleryItem({ item }) {
   return (
     <div
       className="group relative flex overflow-hidden rounded-[20px] ring-1 ring-line transition-all duration-300 hover:-translate-y-1 hover:ring-accent/30 hover:shadow-2xl hover:shadow-accent/10"
-      style={{ gridRowEnd: `span ${Math.ceil(item.height / 100)}` }}
+      style={{ gridRowEnd: `span ${Math.ceil(item.height / 100)}`, minHeight: 200 }}
     >
       <Image
         path={item.media}
@@ -17,7 +17,8 @@ function GalleryItem({ item }) {
         mode="display"
         w={372}
         alt={item.title || ""}
-        className="w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+        fill
+        className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
       />
 
       <Link

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import useEditStore from "@/stores/editorStore";
+import Image from "@/components/Image/Image";
 import { HiTrash } from "react-icons/hi2";
 
 function Workspace({ previewImg }) {
@@ -63,7 +64,13 @@ function Workspace({ previewImg }) {
           backgroundColor: canvasOptions.backgroundColor,
         }}
       >
-        <img src={previewImg.url} alt="" className="w-full" />
+        <Image
+          src={previewImg.url}
+          alt="Wallpaper preview"
+          w={375}
+          h={previewImg.height ? Math.round((375 * previewImg.height) / previewImg.width) : undefined}
+          className="w-full"
+        />
         {textOptions.text && (
           <div
             className="absolute z-[999] max-w-full border border-dashed border-red-500"

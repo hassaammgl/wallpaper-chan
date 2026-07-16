@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { signIn, signUp } from "@/lib/auth-client";
+import NextImage from "next/image";
+import { signUp } from "@/lib/auth-client";
 import useAuthStore from "@/stores/authStore";
 import { HiSparkles } from "react-icons/hi2";
 
@@ -13,10 +14,9 @@ function RegisterPage() {
   const router = useRouter();
   const { setCurrentUser, currentUser } = useAuthStore();
 
-  if (currentUser) {
-    router.push("/");
-    return null;
-  }
+  useEffect(() => {
+    if (currentUser) router.push("/");
+  }, [currentUser, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -55,7 +55,13 @@ function RegisterPage() {
         <div className="absolute inset-0 bg-linear-to-br from-parrot/15 via-transparent to-lime/10" />
         <div className="absolute -left-20 top-1/4 h-72 w-72 rounded-full bg-parrot/15 blur-3xl animate-float" />
         <div className="relative z-10">
-          <img src="/logo.png" alt="logo" className="h-10 w-10 object-contain" />
+          <NextImage
+            src="/logo.png"
+            alt="Wallpaper-chan"
+            width={40}
+            height={40}
+            className="h-10 w-10 object-contain"
+          />
         </div>
         <div className="relative z-10 space-y-6">
           <h1 className="text-5xl font-bold leading-tight tracking-tight">

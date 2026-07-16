@@ -59,6 +59,9 @@ function CommentsPage() {
             >
               <Image
                 path={comment.user?.img || "/general/noAvatar.png"}
+                alt={comment.user?.displayName || "User avatar"}
+                w={40}
+                h={40}
                 className="h-10 w-10 shrink-0 rounded-xl object-cover"
               />
               <div className="min-w-0 flex-1">

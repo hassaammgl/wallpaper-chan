@@ -20,7 +20,9 @@ function Comment({ comment, pinId, onDelete }) {
       <div className="flex flex-1 gap-3">
         <Image
           path={comment.user?.img || "/general/noAvatar.png"}
-          alt=""
+          alt={comment.user?.displayName || "User avatar"}
+          w={32}
+          h={32}
           className="h-8 w-8 shrink-0 rounded-xl object-cover ring-1 ring-line"
         />
         <div className="flex flex-col gap-1">

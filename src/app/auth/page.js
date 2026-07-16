@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import NextImage from "next/image";
 import { signIn, signUp } from "@/lib/auth-client";
 import useAuthStore from "@/stores/authStore";
 import { HiSparkles } from "react-icons/hi2";
@@ -78,9 +79,11 @@ function AuthPage() {
         />
 
         <div className="relative z-10">
-          <img
+          <NextImage
             src="/logo.png"
-            alt="logo"
+            alt="Wallpaper-chan"
+            width={40}
+            height={40}
             className="h-10 w-10 object-contain"
           />
         </div>
@@ -108,10 +111,12 @@ function AuthPage() {
       <div className="flex flex-1 items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-md animate-fade-up">
           <div className="mb-8 lg:hidden">
-            <img
+            <NextImage
               src="/logo.png"
-              alt="logo"
-              className="mb-4 h-9 w-9"
+              alt="Wallpaper-chan"
+              width={36}
+              height={36}
+              className="mb-4 h-9 w-9 object-contain"
             />
             <h1 className="text-2xl font-bold text-gradient">Wallpaper-chan</h1>
           </div>

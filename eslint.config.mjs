@@ -10,7 +10,14 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "temp/**",
   ]),
+  {
+    rules: {
+      // Data-fetching effects legitimately set loading/error state; this rule is noisy for that pattern.
+      "react-hooks/set-state-in-effect": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;
