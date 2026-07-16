@@ -1,5 +1,6 @@
 import { ObjectId } from "mongodb";
 import clientPromise from "./mongodb";
+import { resolveMediaSrc } from "./mediaUrls";
 
 function usersCollection() {
   return clientPromise.then((client) => client.db().collection("user"));
@@ -18,13 +19,16 @@ function userIdQuery(id) {
 export function normalizeUser(doc) {
   if (!doc) return null;
   const id = doc.id || doc._id?.toString();
+  const img = doc.img
+    ? resolveMediaSrc(doc.img, { width: 160 }) || doc.img
+    : null;
   return {
     id,
     _id: id,
     displayName: doc.displayName || doc.name,
     userName: doc.userName,
     email: doc.email,
-    img: doc.img,
+    img,
     role: doc.role || "user",
     blocked: !!doc.blocked,
     createdAt: doc.createdAt,
