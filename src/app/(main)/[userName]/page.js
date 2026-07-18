@@ -157,7 +157,7 @@ function ProfilePage() {
                     router.push("/auth");
                     return;
                   }
-                  router.push(`/messages?user=${data.userName}`);
+                  router.push(`/messages?tab=direct&user=${data.userName}`);
                 }}
                 className="rounded-full border border-line bg-panel px-6 py-2.5 text-sm font-medium text-fog transition-colors hover:bg-panel-hover"
               >

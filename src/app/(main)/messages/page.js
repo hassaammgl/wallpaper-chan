@@ -10,6 +10,7 @@ import {
   HiChatBubbleLeftRight,
   HiPaperAirplane,
   HiArrowLeft,
+  HiChatBubbleBottomCenterText,
 } from "react-icons/hi2";
 
 function formatTime(value) {
@@ -23,7 +24,137 @@ function formatTime(value) {
   return date.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-function MessagesContent() {
+function PostCommentsInbox() {
+  const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [nextCursor, setNextCursor] = useState(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const load = useCallback(async (cursor = 0, append = false) => {
+    try {
+      if (append) setLoadingMore(true);
+      else setLoading(true);
+      const res = await apiRequest.get(
+        `/api/messages/comments?cursor=${cursor}&limit=30`
+      );
+      setComments((prev) =>
+        append ? [...prev, ...(res.data.comments || [])] : res.data.comments || []
+      );
+      setNextCursor(res.data.nextCursor);
+      setError("");
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to load comments");
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load(0, false);
+  }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-16">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-line border-t-accent" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+        {error}
+      </div>
+    );
+  }
+
+  if (comments.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 rounded-[28px] border border-line glass py-20 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-panel">
+          <HiChatBubbleBottomCenterText size={28} className="text-muted" />
+        </div>
+        <p className="text-lg font-medium text-fog">No comments yet</p>
+        <p className="max-w-sm text-sm text-muted">
+          When someone comments on your wallpapers, their messages will show up
+          here.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {comments.map((comment) => {
+        const author = comment.user;
+        const pin = comment.pin;
+        return (
+          <Link
+            key={comment._id}
+            href={pin?._id ? `/pins/${pin._id}` : "#"}
+            className="flex gap-3 rounded-[22px] border border-line glass p-4 transition-colors hover:border-accent/30 hover:bg-panel/40"
+          >
+            <Image
+              path={author?.img || "/general/noAvatar.svg"}
+              alt={author?.displayName || "User"}
+              w={44}
+              h={44}
+              className="h-11 w-11 shrink-0 rounded-xl object-cover"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-sm text-fog">
+                  <span className="font-semibold">
+                    {author?.displayName || author?.userName || "Someone"}
+                  </span>{" "}
+                  <span className="text-muted">commented on</span>{" "}
+                  <span className="font-medium text-accent">
+                    {pin?.title || "your wallpaper"}
+                  </span>
+                </p>
+                <span className="shrink-0 text-[11px] text-muted">
+                  {formatTime(comment.createdAt)}
+                </span>
+              </div>
+              <p className="mt-1.5 text-sm leading-relaxed text-muted">
+                {comment.description}
+              </p>
+            </div>
+            {pin?.media && (
+              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-line">
+                <Image
+                  path={pin.media}
+                  pin={pin}
+                  uploadProvider={pin.uploadProvider}
+                  alt={pin.title || ""}
+                  w={56}
+                  h={56}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            )}
+          </Link>
+        );
+      })}
+
+      {nextCursor !== null && (
+        <button
+          type="button"
+          disabled={loadingMore}
+          onClick={() => load(nextCursor, true)}
+          className="w-full rounded-2xl border border-line py-3 text-sm text-muted transition-colors hover:bg-panel-hover hover:text-fog disabled:opacity-50"
+        >
+          {loadingMore ? "Loading…" : "Load more"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function DirectMessages() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { currentUser } = useAuthStore();
@@ -41,10 +172,6 @@ function MessagesContent() {
   const [mobileShowChat, setMobileShowChat] = useState(false);
   const bottomRef = useRef(null);
   const pollRef = useRef(null);
-
-  useEffect(() => {
-    if (!currentUser) router.push("/auth");
-  }, [currentUser, router]);
 
   const loadConversations = useCallback(async () => {
     try {
@@ -91,7 +218,7 @@ function MessagesContent() {
           return [convo, ...without];
         });
         await openConversation(convo._id, convo.otherUser);
-        router.replace("/messages");
+        router.replace("/messages?tab=direct");
       } catch (err) {
         setError(err.response?.data?.message || "Could not start conversation");
       }
@@ -101,14 +228,8 @@ function MessagesContent() {
 
   useEffect(() => {
     if (!currentUser) return;
-    loadConversations().then((list) => {
-      if (targetUser) {
-        startWithUser(targetUser);
-        return;
-      }
-      if (list.length && !activeId) {
-        // keep empty selection on desktop until user picks
-      }
+    loadConversations().then(() => {
+      if (targetUser) startWithUser(targetUser);
     });
   }, [currentUser, targetUser]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -118,7 +239,6 @@ function MessagesContent() {
 
   useEffect(() => {
     if (!activeId) return;
-
     const refresh = async () => {
       try {
         const res = await apiRequest.get(
@@ -127,10 +247,9 @@ function MessagesContent() {
         setMessages(res.data.messages || []);
         await loadConversations();
       } catch {
-        // ignore poll errors
+        // ignore
       }
     };
-
     pollRef.current = window.setInterval(refresh, 8000);
     return () => {
       if (pollRef.current) window.clearInterval(pollRef.current);
@@ -172,18 +291,8 @@ function MessagesContent() {
     }
   };
 
-  if (!currentUser) return null;
-
   return (
-    <div className="space-y-6 animate-fade-up">
-      <div>
-        <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-accent">
-          <HiChatBubbleLeftRight size={14} />
-          Messages
-        </div>
-        <h1 className="text-3xl font-bold tracking-tight text-fog">Messages</h1>
-      </div>
-
+    <div className="space-y-3">
       {error && (
         <div className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
           {error}
@@ -191,7 +300,6 @@ function MessagesContent() {
       )}
 
       <div className="grid h-[min(70vh,720px)] overflow-hidden rounded-[28px] border border-line glass lg:grid-cols-[320px_1fr]">
-        {/* Conversation list */}
         <aside
           className={`flex flex-col border-line lg:border-r ${
             mobileShowChat ? "hidden lg:flex" : "flex"
@@ -207,7 +315,7 @@ function MessagesContent() {
               </div>
             ) : conversations.length === 0 ? (
               <div className="px-4 py-10 text-center text-sm text-muted">
-                No conversations yet. Message someone from their profile.
+                No direct messages yet. Message someone from their profile.
               </div>
             ) : (
               conversations.map((convo) => {
@@ -219,9 +327,7 @@ function MessagesContent() {
                     type="button"
                     onClick={() => openConversation(convo._id, other)}
                     className={`flex w-full items-center gap-3 border-b border-line px-4 py-3 text-left transition-colors ${
-                      active
-                        ? "bg-accent-soft/60"
-                        : "hover:bg-panel-hover"
+                      active ? "bg-accent-soft/60" : "hover:bg-panel-hover"
                     }`}
                   >
                     <Image
@@ -258,7 +364,6 @@ function MessagesContent() {
           </div>
         </aside>
 
-        {/* Thread */}
         <section
           className={`flex min-h-0 flex-col ${
             mobileShowChat ? "flex" : "hidden lg:flex"
@@ -271,8 +376,7 @@ function MessagesContent() {
               </div>
               <p className="text-lg font-medium text-fog">Select a conversation</p>
               <p className="max-w-sm text-sm text-muted">
-                Pick a chat from the inbox, or open someone&apos;s profile and tap
-                Message.
+                Pick a chat, or open a profile and tap Message.
               </p>
             </div>
           ) : (
@@ -385,6 +489,68 @@ function MessagesContent() {
           )}
         </section>
       </div>
+    </div>
+  );
+}
+
+function MessagesContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { currentUser } = useAuthStore();
+  const tabParam = searchParams.get("tab");
+  const hasDirectIntent =
+    tabParam === "direct" || Boolean(searchParams.get("user"));
+  const [tab, setTab] = useState(hasDirectIntent ? "direct" : "comments");
+
+  useEffect(() => {
+    if (!currentUser) router.push("/auth");
+  }, [currentUser, router]);
+
+  useEffect(() => {
+    if (hasDirectIntent) setTab("direct");
+  }, [hasDirectIntent]);
+
+  if (!currentUser) return null;
+
+  return (
+    <div className="space-y-6 animate-fade-up">
+      <div>
+        <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-accent">
+          <HiChatBubbleLeftRight size={14} />
+          Messages
+        </div>
+        <h1 className="text-3xl font-bold tracking-tight text-fog">Messages</h1>
+        <p className="mt-1 text-sm text-muted">
+          Comments on your wallpapers, plus direct chats
+        </p>
+      </div>
+
+      <div className="flex w-fit flex-wrap gap-1 rounded-2xl border border-line bg-panel/50 p-1">
+        {[
+          { key: "comments", label: "On your posts" },
+          { key: "direct", label: "Direct" },
+        ].map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            onClick={() => {
+              setTab(item.key);
+              router.replace(
+                item.key === "direct" ? "/messages?tab=direct" : "/messages"
+              );
+            }}
+            className={`rounded-xl px-5 py-2.5 text-sm font-medium transition-all ${
+              tab === item.key
+                ? "bg-accent-soft text-accent shadow-sm"
+                : "text-muted hover:text-fog"
+            }`}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "comments" ? <PostCommentsInbox /> : <DirectMessages />}
     </div>
   );
 }
