@@ -23,7 +23,9 @@ function PinPage() {
         setData(res.data);
         apiRequest.post("/api/history", { pinId: id }).catch(() => {});
       } catch (err) {
-        setError(err.message);
+        setError(
+          err.response?.data?.message || err.message || "Failed to load pin"
+        );
       } finally {
         setLoading(false);
       }

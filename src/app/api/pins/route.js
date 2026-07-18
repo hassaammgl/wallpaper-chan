@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import mongoose from "mongoose";
 import connectDB from "@/lib/db";
 import Pin from "@/lib/models/pin.model";
 import Board from "@/lib/models/board.model";
@@ -26,9 +27,13 @@ export async function GET(request) {
       ];
     }
     if (boardId) {
-      const board = await Board.findById(boardId);
-      if (board) {
-        query.$or = [{ board: boardId }, { board: board.title }];
+      if (mongoose.isValidObjectId(boardId)) {
+        const board = await Board.findById(boardId);
+        if (board) {
+          query.$or = [{ board: boardId }, { board: board.title }];
+        } else {
+          query.board = boardId;
+        }
       } else {
         query.board = boardId;
       }
