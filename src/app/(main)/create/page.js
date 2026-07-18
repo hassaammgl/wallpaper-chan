@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import useAuthStore from "@/stores/authStore";
 import useEditStore from "@/stores/editorStore";
 import Editor from "@/components/editor/editor";
@@ -397,9 +398,15 @@ function CreatePage() {
                   </option>
                 ))}
               </select>
-              {albums.length === 0 && (
+              {albums.length === 0 && currentUser?.userName && (
                 <p className="text-xs text-muted">
-                  Create an album from your profile to group wallpapers
+                  No albums yet.{" "}
+                  <Link
+                    href={`/${currentUser.userName}?tab=albums`}
+                    className="text-accent hover:underline"
+                  >
+                    Create one on your profile
+                  </Link>
                 </p>
               )}
             </div>

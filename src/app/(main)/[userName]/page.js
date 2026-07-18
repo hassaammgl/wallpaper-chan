@@ -1,17 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { Suspense, useState, useEffect } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import Image from "@/components/Image/Image";
 import Gallery from "@/components/gallery/gallery";
 import Albums from "@/components/albums/Albums";
 import { SavedPins, HistoryFeed } from "@/components/albums/SavedHistory";
 import apiRequest from "@/lib/apiRequest";
 import useAuthStore from "@/stores/authStore";
-import {
-  HiShare,
-  HiEllipsisHorizontal,
-} from "react-icons/hi2";
+import ShareButton from "@/components/ShareButton";
+import { HiEllipsisHorizontal } from "react-icons/hi2";
 
 function FollowButton({ isFollowing, userName, onFollowChange }) {
   const [following, setFollowing] = useState(isFollowing);
@@ -54,8 +52,11 @@ const TABS = [
 
 function ProfilePage() {
   const { userName } = useParams();
+  const searchParams = useSearchParams();
   const { currentUser } = useAuthStore();
-  const [type, setType] = useState("created");
+  const tabParam = searchParams.get("tab");
+  const initialTab = TABS.some((t) => t.key === tabParam) ? tabParam : "created";
+  const [type, setType] = useState(initialTab);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -82,6 +83,12 @@ function ProfilePage() {
   useEffect(() => {
     fetchProfile();
   }, [userName]);
+
+  useEffect(() => {
+    if (TABS.some((t) => t.key === tabParam)) {
+      setType(tabParam);
+    }
+  }, [tabParam]);
 
   useEffect(() => {
     if (!isOwner && (type === "saved" || type === "history")) {
@@ -151,10 +158,17 @@ function ProfilePage() {
                 onFollowChange={fetchProfile}
               />
             )}
-            <button className="flex h-10 w-10 items-center justify-center rounded-full border border-line text-muted transition-colors hover:bg-panel-hover hover:text-fog">
-              <HiShare size={18} />
-            </button>
-            <button className="flex h-10 w-10 items-center justify-center rounded-full border border-line text-muted transition-colors hover:bg-panel-hover hover:text-fog">
+            <ShareButton
+              title={data.displayName || data.userName}
+              text={`Check out @${data.userName} on Wallpaper-chan`}
+              url={`/${data.userName}`}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-line text-muted transition-colors hover:bg-panel-hover hover:text-fog disabled:opacity-50"
+            />
+            <button
+              type="button"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-line text-muted transition-colors hover:bg-panel-hover hover:text-fog"
+              aria-label="More options"
+            >
               <HiEllipsisHorizontal size={18} />
             </button>
           </div>
@@ -187,4 +201,18 @@ function ProfilePage() {
   );
 }
 
-export default ProfilePage;
+export default function ProfilePageWithSuspense() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center gap-4 py-12 animate-pulse">
+          <div className="h-28 w-28 rounded-full bg-panel ring-2 ring-line" />
+          <div className="h-8 w-48 rounded-xl bg-panel" />
+          <div className="h-4 w-32 rounded-lg bg-panel" />
+        </div>
+      }
+    >
+      <ProfilePage />
+    </Suspense>
+  );
+}

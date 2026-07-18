@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import apiRequest from "@/lib/apiRequest";
-import { HiShare, HiEllipsisHorizontal, HiHeart } from "react-icons/hi2";
+import ShareButton from "@/components/ShareButton";
+import { HiEllipsisHorizontal, HiHeart } from "react-icons/hi2";
 
-function PostInteractions({ postId }) {
+function PostInteractions({ postId, title }) {
   const [data, setData] = useState({ likeCount: 0, isLiked: false, isSaved: false });
   const [loading, setLoading] = useState(true);
 
@@ -59,10 +60,17 @@ function PostInteractions({ postId }) {
           />
           {data.likeCount}
         </button>
-        <button className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-panel-hover hover:text-fog">
-          <HiShare size={18} />
-        </button>
-        <button className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-panel-hover hover:text-fog">
+        <ShareButton
+          title={title}
+          text={title ? `Check out this wallpaper: ${title}` : "Check out this wallpaper"}
+          url={`/pins/${postId}`}
+          className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-panel-hover hover:text-fog disabled:opacity-50"
+        />
+        <button
+          type="button"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-panel-hover hover:text-fog"
+          aria-label="More options"
+        >
           <HiEllipsisHorizontal size={18} />
         </button>
       </div>

@@ -88,7 +88,7 @@ function PinPage() {
         </div>
 
         <div className="flex w-full flex-col gap-5 border-t border-line p-5 lg:w-[400px] lg:shrink-0 lg:border-t-0 lg:border-l">
-          <PostInteractions postId={id} />
+          <PostInteractions postId={id} title={data.title} />
 
           <button
             onClick={handleDownload}
