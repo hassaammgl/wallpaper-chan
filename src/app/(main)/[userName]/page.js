@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState, useEffect } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Image from "@/components/Image/Image";
 import Gallery from "@/components/gallery/gallery";
 import Albums from "@/components/albums/Albums";
@@ -53,6 +53,7 @@ const TABS = [
 function ProfilePage() {
   const { userName } = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { currentUser } = useAuthStore();
   const tabParam = searchParams.get("tab");
   const initialTab = TABS.some((t) => t.key === tabParam) ? tabParam : "created";
@@ -148,9 +149,21 @@ function ProfilePage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button className="rounded-full border border-line bg-panel px-6 py-2.5 text-sm font-medium text-fog transition-colors hover:bg-panel-hover">
-              Message
-            </button>
+            {!isOwner && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (!currentUser) {
+                    router.push("/auth");
+                    return;
+                  }
+                  router.push(`/messages?user=${data.userName}`);
+                }}
+                className="rounded-full border border-line bg-panel px-6 py-2.5 text-sm font-medium text-fog transition-colors hover:bg-panel-hover"
+              >
+                Message
+              </button>
+            )}
             {!isOwner && (
               <FollowButton
                 isFollowing={data.isFollowing}
