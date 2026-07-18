@@ -100,6 +100,29 @@ export async function POST(request) {
       category,
     } = body;
 
+    if (!title?.trim() || !description?.trim()) {
+      return Response.json(
+        { success: false, message: "Title and description are required" },
+        { status: 400 }
+      );
+    }
+
+    if (!media && !originalMedia) {
+      return Response.json(
+        { success: false, message: "Image upload is required" },
+        { status: 400 }
+      );
+    }
+
+    const pinWidth = Number(width);
+    const pinHeight = Number(height);
+    if (!Number.isFinite(pinWidth) || !Number.isFinite(pinHeight)) {
+      return Response.json(
+        { success: false, message: "Image dimensions are required" },
+        { status: 400 }
+      );
+    }
+
     const tagsArray = tags
       ? typeof tags === "string"
         ? tags
@@ -110,19 +133,20 @@ export async function POST(request) {
       : [];
 
     const pin = await Pin.create({
-      title,
-      description,
+      title: title.trim(),
+      description: description.trim(),
       prompt: prompt || null,
-      link,
-      board: board || null,
+      link: link || null,
+      // Schema requires board; uncategorized pins use "general"
+      board: board || "general",
       tags: tagsArray,
-      media,
-      originalMedia,
-      originalUrl,
+      media: media || originalMedia,
+      originalMedia: originalMedia || media,
+      originalUrl: originalUrl || null,
       uploadProvider: uploadProvider || "imagekit",
-      width: Number(width),
-      height: Number(height),
-      resolution,
+      width: pinWidth,
+      height: pinHeight,
+      resolution: resolution || `${pinWidth}x${pinHeight}`,
       deviceType: deviceType || "both",
       category: category || "general",
       user: session.user.id,
@@ -130,9 +154,13 @@ export async function POST(request) {
 
     return Response.json(pin, { status: 201 });
   } catch (error) {
-    return Response.json(
-      { success: false, message: "Failed to create pin" },
-      { status: 500 }
-    );
+    console.error("Failed to create pin:", error);
+    const message =
+      error?.name === "ValidationError"
+        ? Object.values(error.errors)
+            .map((e) => e.message)
+            .join("; ")
+        : error?.message || "Failed to create pin";
+    return Response.json({ success: false, message }, { status: 500 });
   }
 }

@@ -23,7 +23,7 @@ const pinSchema = new mongoose.Schema(
     description: { type: String, required: true },
     prompt: { type: String },
     link: { type: String },
-    board: { type: String, required: true },
+    board: { type: String, required: true, default: "general" },
     tags: { type: [String] },
     user: { type: String, required: true },
   },
