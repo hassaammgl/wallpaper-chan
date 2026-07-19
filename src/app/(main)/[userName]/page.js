@@ -9,7 +9,15 @@ import { SavedPins, HistoryFeed } from "@/components/albums/SavedHistory";
 import apiRequest from "@/lib/apiRequest";
 import useAuthStore from "@/stores/authStore";
 import ShareButton from "@/components/ShareButton";
-import { HiEllipsisHorizontal } from "react-icons/hi2";
+import OptionsMenu from "@/components/OptionsMenu";
+import { shareContent } from "@/lib/share";
+import {
+  HiLink,
+  HiChatBubbleLeftRight,
+  HiFlag,
+  HiUserPlus,
+  HiPencilSquare,
+} from "react-icons/hi2";
 
 function FollowButton({ isFollowing, userName, onFollowChange }) {
   const [following, setFollowing] = useState(isFollowing);
@@ -177,13 +185,60 @@ function ProfilePage() {
               url={`/${data.userName}`}
               className="flex h-10 w-10 items-center justify-center rounded-full border border-line text-muted transition-colors hover:bg-panel-hover hover:text-fog disabled:opacity-50"
             />
-            <button
-              type="button"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-line text-muted transition-colors hover:bg-panel-hover hover:text-fog"
-              aria-label="More options"
-            >
-              <HiEllipsisHorizontal size={18} />
-            </button>
+            <OptionsMenu
+              align="right"
+              buttonClassName="flex h-10 w-10 items-center justify-center rounded-full border border-line text-muted transition-colors hover:bg-panel-hover hover:text-fog"
+              items={[
+                {
+                  label: "Copy profile link",
+                  icon: <HiLink size={16} />,
+                  onClick: async () => {
+                    await shareContent({
+                      title: data.displayName || data.userName,
+                      text: `Check out @${data.userName} on Wallpaper-chan`,
+                      url: `/${data.userName}`,
+                    });
+                  },
+                },
+                !isOwner && {
+                  label: "Message",
+                  icon: <HiChatBubbleLeftRight size={16} />,
+                  onClick: () => {
+                    if (!currentUser) {
+                      router.push("/auth");
+                      return;
+                    }
+                    router.push(`/messages?tab=direct&user=${data.userName}`);
+                  },
+                },
+                !isOwner && {
+                  label: data.isFollowing ? "Following" : "Follow",
+                  icon: <HiUserPlus size={16} />,
+                  onClick: async () => {
+                    if (!currentUser) {
+                      router.push("/auth");
+                      return;
+                    }
+                    try {
+                      await apiRequest.post(`/api/users/follow/${data.userName}`);
+                      fetchProfile();
+                    } catch {
+                      // ignore
+                    }
+                  },
+                },
+                isOwner && {
+                  label: "Edit profile",
+                  icon: <HiPencilSquare size={16} />,
+                  onClick: () => router.push("/settings"),
+                },
+                !isOwner && {
+                  label: "Report user",
+                  icon: <HiFlag size={16} />,
+                  onClick: () => alert("Thanks — report noted"),
+                },
+              ]}
+            />
           </div>
         </div>
       </div>
