@@ -35,16 +35,8 @@ function PinPage() {
 
   const handleDownload = async () => {
     try {
-      const res = await apiRequest.get(`/api/pins/${id}/download`);
-      const { downloadUrl, filename } = res.data;
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = filename || "wallpaper.jpg";
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const { downloadPin } = await import("@/lib/downloadPin");
+      await downloadPin(id, `${data?.title || "wallpaper"}.jpg`);
     } catch {
       alert("Download failed. Please try again.");
     }

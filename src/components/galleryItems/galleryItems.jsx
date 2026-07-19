@@ -66,16 +66,8 @@ function GalleryItem({ item }) {
 
   const handleDownload = async () => {
     try {
-      const res = await apiRequest.get(`/api/pins/${item._id}/download`);
-      const { downloadUrl, filename } = res.data;
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = filename || "wallpaper.jpg";
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const { downloadPin } = await import("@/lib/downloadPin");
+      await downloadPin(item._id, `${item.title || "wallpaper"}.jpg`);
     } catch {
       showToast("Download failed");
     }

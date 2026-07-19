@@ -87,16 +87,8 @@ function PostInteractions({ postId, title }) {
 
   const handleDownload = async () => {
     try {
-      const res = await apiRequest.get(`/api/pins/${postId}/download`);
-      const { downloadUrl, filename } = res.data;
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = filename || "wallpaper.jpg";
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const { downloadPin } = await import("@/lib/downloadPin");
+      await downloadPin(postId, `${title || "wallpaper"}.jpg`);
     } catch {
       showToast("Download failed");
     }
