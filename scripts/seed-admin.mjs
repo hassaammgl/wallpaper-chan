@@ -1,19 +1,17 @@
 #!/usr/bin/env node
 /**
- * Create or promote an admin user for Wallpaper-chan (better-auth + MongoDB).
+ * Create or repair an admin user for Wallpaper-chan (better-auth + MongoDB).
+ *
+ * Better-auth's Mongo adapter maps user.id <-> MongoDB ObjectId _id.
+ * Credential passwords live on the `account` collection with userId as ObjectId.
  *
  * Usage:
  *   bun run seed:admin
  *   bun run seed:admin -- --email you@example.com --password 'Secret123!' --username admin
  *   bun run promote:admin -- you@example.com
- *
- * Env (optional, from .env.local / .env):
- *   MONGODB_URI (required)
- *   ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_USERNAME, ADMIN_DISPLAY_NAME
  */
 
 import { MongoClient } from "mongodb";
-import { generateId } from "better-auth";
 import { hashPassword } from "better-auth/crypto";
 import { readFileSync, existsSync } from "fs";
 import { resolve, dirname } from "path";
@@ -42,13 +40,22 @@ function loadEnvFile(filePath) {
 }
 
 function parseArgs(argv) {
-  const args = { email: null, password: null, username: null, name: null, promoteOnly: false, resetPassword: false };
+  const args = {
+    email: null,
+    password: null,
+    username: null,
+    name: null,
+    promoteOnly: false,
+    resetPassword: true, // always repair password unless --no-reset-password
+    help: false,
+  };
   const positional = [];
 
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--promote-only" || a === "--promote") args.promoteOnly = true;
     else if (a === "--reset-password") args.resetPassword = true;
+    else if (a === "--no-reset-password") args.resetPassword = false;
     else if (a === "--email") args.email = argv[++i];
     else if (a === "--password") args.password = argv[++i];
     else if (a === "--username" || a === "--userName") args.username = argv[++i];
@@ -64,18 +71,16 @@ function parseArgs(argv) {
 
 function printHelp() {
   console.log(`
-Create or promote an admin user.
+Create or repair an admin user (better-auth compatible).
 
-  node scripts/seed-admin.mjs [email] [password]
-  node scripts/seed-admin.mjs --email EMAIL --password PASS [--username NAME] [--name DISPLAY]
-  node scripts/seed-admin.mjs --promote-only --email EMAIL
-  node scripts/seed-admin.mjs --email EMAIL --password PASS --reset-password
+  bun run seed:admin
+  bun run seed:admin -- --email EMAIL --password PASS [--username NAME]
+  bun run promote:admin -- EMAIL
 
-Defaults come from ADMIN_* env vars or:
+Defaults:
   email:    admin@wallpaper-chan.com
   password: Admin@12345
   username: admin
-  name:     Admin
 `);
 }
 
@@ -102,73 +107,109 @@ const ADMIN_PASSWORD = cli.password || env.ADMIN_PASSWORD || "Admin@12345";
 const ADMIN_USERNAME = cli.username || env.ADMIN_USERNAME || "admin";
 const ADMIN_DISPLAY_NAME = cli.name || env.ADMIN_DISPLAY_NAME || "Admin";
 
-function userIdOf(doc) {
-  return doc?.id || doc?._id?.toString();
+function authUserId(user) {
+  // better-auth mongo adapter uses ObjectId _id as the canonical user id
+  return user._id;
 }
 
-async function ensureCredentialAccount(accounts, userId, password, { force = false } = {}) {
-  const existing = await accounts.findOne({
-    userId,
-    providerId: "credential",
-  });
-
+async function upsertCredentialAccount(accounts, userObjectId, password, { force }) {
+  const userIdStr = userObjectId.toHexString();
   const hashed = await hashPassword(password);
 
-  if (existing) {
-    if (force || !existing.password) {
-      await accounts.updateOne(
-        { _id: existing._id },
-        { $set: { password: hashed, updatedAt: new Date() } }
-      );
-      return force ? "password-reset" : "password-set";
-    }
-    return "account-exists";
+  // Remove broken legacy accounts (string ids / wrong userId shape)
+  await accounts.deleteMany({
+    providerId: "credential",
+    $or: [
+      { userId: userIdStr },
+      { userId: userObjectId },
+      { accountId: userIdStr },
+      { accountId: userObjectId },
+    ],
+  });
+
+  // Also wipe orphan credential rows that point at a non-ObjectId "id" field leftovers
+  // (handled per-user below by caller when legacy string id exists)
+
+  if (!force) {
+    const existing = await accounts.findOne({
+      providerId: "credential",
+      userId: userObjectId,
+    });
+    if (existing?.password) return "account-exists";
   }
 
-  const accountId = generateId();
   await accounts.insertOne({
-    id: accountId,
-    accountId: userId,
+    userId: userObjectId,
+    accountId: userIdStr,
     providerId: "credential",
-    userId,
     password: hashed,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
-  return "account-created";
+
+  return force ? "password-reset" : "account-created";
 }
 
-async function promoteExisting(users, accounts, existing) {
-  const userId = userIdOf(existing);
-  const updates = { role: "admin", blocked: false, updatedAt: new Date() };
+async function repairAndPromote(users, accounts, existing) {
+  const userObjectId = authUserId(existing);
+  const legacyStringId =
+    typeof existing.id === "string" && existing.id !== userObjectId.toHexString()
+      ? existing.id
+      : null;
+
+  const updates = {
+    role: "admin",
+    blocked: false,
+    email: ADMIN_EMAIL,
+    emailVerified: true,
+    updatedAt: new Date(),
+  };
 
   if (!existing.userName) updates.userName = ADMIN_USERNAME;
   if (!existing.displayName && !existing.name) {
     updates.displayName = ADMIN_DISPLAY_NAME;
     updates.name = ADMIN_DISPLAY_NAME;
+  } else {
+    if (existing.displayName && !existing.name) updates.name = existing.displayName;
+    if (existing.name && !existing.displayName) updates.displayName = existing.name;
   }
 
+  // Drop legacy fields that break better-auth
+  const unset = { hashedPassword: "" };
+  if (legacyStringId) unset.id = "";
+
   await users.updateOne(
-    existing.id ? { id: existing.id } : { _id: existing._id },
-    { $set: updates }
+    { _id: userObjectId },
+    { $set: updates, $unset: unset }
   );
 
-  let accountStatus = "skipped";
-  if (!cli.promoteOnly) {
-    accountStatus = await ensureCredentialAccount(accounts, userId, ADMIN_PASSWORD, {
-      force: cli.resetPassword,
+  if (legacyStringId) {
+    await accounts.deleteMany({
+      providerId: "credential",
+      $or: [{ userId: legacyStringId }, { accountId: legacyStringId }],
     });
   }
 
-  console.log("Promoted existing user to admin:");
-  console.log(`  ID:       ${userId}`);
-  console.log(`  Email:    ${existing.email}`);
+  let accountStatus = "skipped";
+  if (!cli.promoteOnly) {
+    accountStatus = await upsertCredentialAccount(
+      accounts,
+      userObjectId,
+      ADMIN_PASSWORD,
+      { force: cli.resetPassword }
+    );
+  }
+
+  console.log("Admin account ready:");
+  console.log(`  ID:       ${userObjectId.toHexString()}`);
+  console.log(`  Email:    ${ADMIN_EMAIL}`);
   console.log(`  Username: ${updates.userName || existing.userName}`);
   console.log(`  Role:     admin`);
   console.log(`  Account:  ${accountStatus}`);
-  if (accountStatus === "password-reset" || accountStatus === "password-set" || accountStatus === "account-created") {
+  if (accountStatus !== "skipped" && accountStatus !== "account-exists") {
     console.log(`  Password: ${ADMIN_PASSWORD}`);
   }
+  console.log("\nSign in at /auth, then open /admin");
 }
 
 async function createAdmin(users, accounts) {
@@ -178,11 +219,8 @@ async function createAdmin(users, accounts) {
     process.exit(1);
   }
 
-  const userId = generateId();
   const now = new Date();
-
-  await users.insertOne({
-    id: userId,
+  const result = await users.insertOne({
     name: ADMIN_DISPLAY_NAME,
     displayName: ADMIN_DISPLAY_NAME,
     userName: ADMIN_USERNAME,
@@ -196,20 +234,23 @@ async function createAdmin(users, accounts) {
     updatedAt: now,
   });
 
-  await ensureCredentialAccount(accounts, userId, ADMIN_PASSWORD);
+  const userObjectId = result.insertedId;
+  await upsertCredentialAccount(accounts, userObjectId, ADMIN_PASSWORD, {
+    force: true,
+  });
 
   console.log("Admin user created:");
-  console.log(`  ID:       ${userId}`);
+  console.log(`  ID:       ${userObjectId.toHexString()}`);
   console.log(`  Email:    ${ADMIN_EMAIL}`);
   console.log(`  Username: ${ADMIN_USERNAME}`);
   console.log(`  Password: ${ADMIN_PASSWORD}`);
-  console.log("\nSign in, then open /admin");
+  console.log("\nSign in at /auth, then open /admin");
   console.log("Change the default password after first login.");
 }
 
 async function main() {
   const client = new MongoClient(MONGODB_URI, {
-    tls: MONGODB_URI.includes("mongodb+srv"),
+    tls: MONGODB_URI.includes("mongodb+srv") || MONGODB_URI.includes("tls=true"),
     tlsAllowInvalidCertificates: true,
   });
 
@@ -219,10 +260,14 @@ async function main() {
     const users = db.collection("user");
     const accounts = db.collection("account");
 
-    // Prefer matching by email; also allow ObjectId-looking emails? no.
     const existing =
       (await users.findOne({ email: ADMIN_EMAIL })) ||
-      (await users.findOne({ email: new RegExp(`^${ADMIN_EMAIL.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") }));
+      (await users.findOne({
+        email: new RegExp(
+          `^${ADMIN_EMAIL.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
+          "i"
+        ),
+      }));
 
     if (cli.promoteOnly && !existing) {
       console.error(`No user found with email: ${ADMIN_EMAIL}`);
@@ -231,7 +276,7 @@ async function main() {
     }
 
     if (existing) {
-      await promoteExisting(users, accounts, existing);
+      await repairAndPromote(users, accounts, existing);
       return;
     }
 

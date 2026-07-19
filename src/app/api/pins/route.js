@@ -85,6 +85,13 @@ export async function POST(request) {
       );
     }
 
+    if (session.user.role !== "admin") {
+      return Response.json(
+        { success: false, message: "Only admins can upload wallpapers" },
+        { status: 403 }
+      );
+    }
+
     await connectDB();
     const body = await request.json();
     const {
@@ -142,7 +149,6 @@ export async function POST(request) {
       description: description.trim(),
       prompt: prompt || null,
       link: link || null,
-      // Schema requires board; uncategorized pins use "general"
       board: board || "general",
       tags: tagsArray,
       media: media || originalMedia,

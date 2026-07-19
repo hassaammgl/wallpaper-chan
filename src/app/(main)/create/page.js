@@ -51,7 +51,13 @@ function CreatePage() {
   const [selectedAlbum, setSelectedAlbum] = useState("");
 
   useEffect(() => {
-    if (!currentUser) router.push("/auth");
+    if (!currentUser) {
+      router.push("/auth");
+      return;
+    }
+    if (currentUser.role !== "admin") {
+      router.replace("/");
+    }
   }, [router, currentUser]);
 
   useEffect(() => {

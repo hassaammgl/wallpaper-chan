@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "seed:admin": "node scripts/seed-admin.mjs",
-    "promote:admin": "node scripts/promote-admin.mjs"
+    "promote:admin": "node scripts/promote-admin.mjs",
+    "reassign:pins": "node scripts/reassign-pins-to-admin.mjs"
   },
   "dependencies": {
     "@imagekit/javascript": "^5.4.1",

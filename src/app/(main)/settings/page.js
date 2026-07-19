@@ -72,6 +72,7 @@ function SettingsPage() {
         setUploading(true);
         const mediaData = await uploadWallpaper(avatarFile, {
           folder: "/avatars",
+          purpose: "avatar",
         });
         imgPath = mediaData.url || mediaData.filePath;
         setUploading(false);

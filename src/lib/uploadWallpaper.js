@@ -3,9 +3,11 @@
 import { upload } from "@imagekit/javascript";
 import apiRequest from "./apiRequest";
 
-export async function uploadToImageKit(file, { folder = "/wallpapers", onProgress, publicKey: pk } = {}) {
+export async function uploadToImageKit(file, { folder = "/wallpapers", onProgress, publicKey: pk, purpose } = {}) {
+  const uploadPurpose =
+    purpose || (folder.includes("avatar") ? "avatar" : "wallpaper");
   const [authRes, configRes] = await Promise.all([
-    apiRequest.get("/api/upload/auth"),
+    apiRequest.get(`/api/upload/auth?purpose=${uploadPurpose}`),
     pk ? null : apiRequest.get("/api/upload/config"),
   ]);
   const { token, signature, expire } = authRes.data.data;
@@ -41,9 +43,9 @@ export async function uploadToImageKit(file, { folder = "/wallpapers", onProgres
   };
 }
 
-export async function uploadToCloudinary(file, { onProgress } = {}) {
+export async function uploadToCloudinary(file, { onProgress, purpose = "wallpaper" } = {}) {
   const { data: signRes } = await apiRequest.get(
-    "/api/upload/cloudinary/sign"
+    `/api/upload/cloudinary/sign?purpose=${purpose}`
   );
   const { timestamp, signature, folder, cloudName, apiKey } = signRes.data;
 
@@ -91,12 +93,19 @@ export async function uploadToCloudinary(file, { onProgress } = {}) {
   };
 }
 
-export async function uploadWallpaper(file, { onProgress, folder } = {}) {
+export async function uploadWallpaper(file, { onProgress, folder, purpose } = {}) {
   const { data: configRes } = await apiRequest.get("/api/upload/config");
   const { provider, imagekit } = configRes.data;
+  const resolvedPurpose =
+    purpose || (folder?.includes("avatar") ? "avatar" : "wallpaper");
 
   if (provider === "cloudinary") {
-    return uploadToCloudinary(file, { onProgress });
+    return uploadToCloudinary(file, { onProgress, purpose: resolvedPurpose });
   }
-  return uploadToImageKit(file, { onProgress, folder, publicKey: imagekit?.publicKey });
+  return uploadToImageKit(file, {
+    onProgress,
+    folder,
+    publicKey: imagekit?.publicKey,
+    purpose: resolvedPurpose,
+  });
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import NextImage from "next/image";
 import { usePathname } from "next/navigation";
+import useAuthStore from "@/stores/authStore";
 import {
   HiHome,
   HiPlusCircle,
@@ -11,14 +12,21 @@ import {
   HiCog6Tooth,
 } from "react-icons/hi2";
 
-const navItems = [
+const baseNavItems = [
   { to: "/", icon: HiHome, label: "Home" },
-  { to: "/create", icon: HiPlusCircle, label: "Create" },
   { to: "/alerts", icon: HiBell, label: "Alerts" },
   { to: "/messages", icon: HiChatBubbleLeftRight, label: "Messages" },
 ];
 
-function NavLinks({ pathname, className = "" }) {
+function NavLinks({ pathname, className = "", isAdmin = false }) {
+  const navItems = isAdmin
+    ? [
+        baseNavItems[0],
+        { to: "/create", icon: HiPlusCircle, label: "Create" },
+        ...baseNavItems.slice(1),
+      ]
+    : baseNavItems;
+
   return navItems.map(({ to, icon: Icon, label }) => {
     const isActive = to === "/" ? pathname === "/" : pathname.startsWith(to);
     return (
@@ -40,10 +48,11 @@ function NavLinks({ pathname, className = "" }) {
 
 function LeftBar() {
   const pathname = usePathname();
+  const { currentUser } = useAuthStore();
+  const isAdmin = currentUser?.role === "admin";
 
   return (
     <>
-      {/* Desktop / tablet side rail */}
       <aside className="fixed top-4 left-4 bottom-4 z-50 hidden w-[60px] flex-col items-center justify-between rounded-[28px] glass py-5 shadow-2xl shadow-black/40 md:flex">
         <div className="flex flex-col items-center gap-1">
           <Link
@@ -58,7 +67,7 @@ function LeftBar() {
               className="h-7 w-7 object-contain"
             />
           </Link>
-          <NavLinks pathname={pathname} />
+          <NavLinks pathname={pathname} isAdmin={isAdmin} />
         </div>
 
         <Link
@@ -70,9 +79,8 @@ function LeftBar() {
         </Link>
       </aside>
 
-      {/* Mobile bottom nav */}
       <nav className="fixed inset-x-3 bottom-3 z-50 flex items-center justify-around rounded-[24px] glass px-2 py-2 shadow-2xl shadow-black/40 md:hidden">
-        <NavLinks pathname={pathname} />
+        <NavLinks pathname={pathname} isAdmin={isAdmin} />
         <Link
           href="/settings"
           title="Settings"
