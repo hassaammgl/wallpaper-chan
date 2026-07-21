@@ -22,7 +22,9 @@ export async function GET(request) {
     const limit = Math.min(Number(searchParams.get("limit") || 30), 50);
     const userId = session.user.id;
 
-    const myPins = await Pin.find({ user: userId }).select("_id title media uploadProvider width height");
+    const myPins = await Pin.find({ user: userId }).select(
+      "_id title media uploadProvider width height"
+    );
     const pinIds = myPins.map((p) => p._id.toString());
     const pinMap = new Map(myPins.map((p) => [p._id.toString(), p.toObject()]));
 
@@ -54,9 +56,9 @@ export async function GET(request) {
       nextCursor: hasMore ? cursor + limit : null,
     });
   } catch (error) {
-    console.error("Failed to fetch post comments:", error);
+    console.error("Failed to fetch alerts:", error);
     return Response.json(
-      { success: false, message: "Failed to fetch comments" },
+      { success: false, message: "Failed to fetch alerts" },
       { status: 500 }
     );
   }

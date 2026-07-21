@@ -8,14 +8,12 @@ import {
   HiHome,
   HiPlusCircle,
   HiBell,
-  HiChatBubbleLeftRight,
   HiCog6Tooth,
 } from "react-icons/hi2";
 
 const baseNavItems = [
   { to: "/", icon: HiHome, label: "Home" },
   { to: "/alerts", icon: HiBell, label: "Alerts" },
-  { to: "/messages", icon: HiChatBubbleLeftRight, label: "Messages" },
 ];
 
 function NavLinks({ pathname, className = "", isAdmin = false }) {

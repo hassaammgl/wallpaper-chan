@@ -76,7 +76,7 @@ export async function PATCH(request, { params }) {
       );
     }
 
-    if (album.user !== session.user.id) {
+    if (album.user !== session.user.id && session.user.role !== "admin") {
       return Response.json(
         { success: false, message: "Forbidden" },
         { status: 403 }
@@ -119,7 +119,7 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    if (album.user !== session.user.id) {
+    if (album.user !== session.user.id && session.user.role !== "admin") {
       return Response.json(
         { success: false, message: "Forbidden" },
         { status: 403 }
@@ -127,7 +127,10 @@ export async function DELETE(request, { params }) {
     }
 
     const boardId = album._id.toString();
-    await Pin.updateMany({ board: boardId }, { $unset: { board: "" } });
+    await Pin.updateMany(
+      { $or: [{ board: boardId }, { board: album.title }] },
+      { $set: { board: "general" } }
+    );
     await Comment.deleteMany({ album: boardId });
     await Board.deleteOne({ _id: album._id });
 

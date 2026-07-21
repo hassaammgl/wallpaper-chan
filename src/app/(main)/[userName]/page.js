@@ -13,7 +13,6 @@ import OptionsMenu from "@/components/OptionsMenu";
 import { shareContent } from "@/lib/share";
 import {
   HiLink,
-  HiChatBubbleLeftRight,
   HiFlag,
   HiUserPlus,
   HiPencilSquare,
@@ -158,21 +157,6 @@ function ProfilePage() {
 
           <div className="flex items-center gap-3">
             {!isOwner && (
-              <button
-                type="button"
-                onClick={() => {
-                  if (!currentUser) {
-                    router.push("/auth");
-                    return;
-                  }
-                  router.push(`/messages?tab=direct&user=${data.userName}`);
-                }}
-                className="rounded-full border border-line bg-panel px-6 py-2.5 text-sm font-medium text-fog transition-colors hover:bg-panel-hover"
-              >
-                Message
-              </button>
-            )}
-            {!isOwner && (
               <FollowButton
                 isFollowing={data.isFollowing}
                 userName={data.userName}
@@ -198,17 +182,6 @@ function ProfilePage() {
                       text: `Check out @${data.userName} on Wallpaper-chan`,
                       url: `/${data.userName}`,
                     });
-                  },
-                },
-                !isOwner && {
-                  label: "Message",
-                  icon: <HiChatBubbleLeftRight size={16} />,
-                  onClick: () => {
-                    if (!currentUser) {
-                      router.push("/auth");
-                      return;
-                    }
-                    router.push(`/messages?tab=direct&user=${data.userName}`);
                   },
                 },
                 !isOwner && {
