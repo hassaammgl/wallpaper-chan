@@ -32,14 +32,15 @@ function Gallery({ search, userId, boardId, deviceType }) {
 
       const res = await apiRequest.get(`/api/pins?${params.toString()}`);
       const data = res.data;
+      const nextPins = Array.isArray(data?.pins) ? data.pins : [];
 
       if (reset) {
-        setPins(data.pins);
+        setPins(nextPins);
       } else {
-        setPins((prev) => [...prev, ...data.pins]);
+        setPins((prev) => [...prev, ...nextPins]);
       }
-      setCursor(data.nextCursor);
-      setHasMore(!!data.nextCursor);
+      setCursor(data?.nextCursor ?? null);
+      setHasMore(!!data?.nextCursor);
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -67,9 +68,9 @@ function Gallery({ search, userId, boardId, deviceType }) {
         const res = await apiRequest.get(`/api/pins?${params.toString()}`);
         if (cancelled) return;
         const data = res.data;
-        setPins(data.pins);
-        setCursor(data.nextCursor);
-        setHasMore(!!data.nextCursor);
+        setPins(Array.isArray(data?.pins) ? data.pins : []);
+        setCursor(data?.nextCursor ?? null);
+        setHasMore(!!data?.nextCursor);
         setError(null);
       } catch (err) {
         if (!cancelled) setError(err.message);

@@ -38,7 +38,9 @@ export async function GET(request) {
         query.board = boardId;
       }
     }
-    if (deviceType) query.deviceType = deviceType;
+    if (deviceType) {
+      query.deviceType = { $in: [deviceType, "both"] };
+    }
 
     try {
       const blockedIds = await getBlockedUserIds();

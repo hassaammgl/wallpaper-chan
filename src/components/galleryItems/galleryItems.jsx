@@ -74,38 +74,49 @@ function GalleryItem({ item }) {
     }
   };
 
+  const pinHeight = Number(item.height) || 1200;
+  const pinWidth = Number(item.width) || 800;
+  const rowSpan = Math.max(
+    22,
+    Math.min(52, Math.ceil((pinHeight / pinWidth) * 28))
+  );
   const showChrome = menuOpen;
 
   return (
-    <div
-      className={`group relative z-0 rounded-[20px] transition-all duration-300 hover:z-30 hover:-translate-y-1 ${
+    <article
+      className={`group relative z-0 transition-all duration-300 hover:z-30 hover:-translate-y-1 ${
         menuOpen ? "z-40" : ""
       }`}
       style={{
-        gridRowEnd: `span ${Math.max(18, Math.ceil(item.height / 100))}`,
-        minHeight: 200,
+        gridRowEnd: `span ${rowSpan}`,
       }}
     >
-      <div className="relative h-full min-h-[200px] overflow-hidden rounded-[20px] ring-1 ring-line transition-all group-hover:ring-accent/30 group-hover:shadow-2xl group-hover:shadow-accent/10">
+      <div
+        className="relative overflow-hidden rounded-[20px] bg-panel ring-1 ring-line transition-all group-hover:ring-accent/30 group-hover:shadow-2xl group-hover:shadow-accent/10"
+        style={{ height: "100%", minHeight: rowSpan * 10 }}
+      >
         <Image
           path={item.media}
           pin={item}
           uploadProvider={item.uploadProvider}
           mode="display"
           w={372}
-          alt={item.title || ""}
+          alt={item.title || "Wallpaper"}
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         />
 
         <Link
           href={`/pins/${item._id}`}
-          className={`absolute inset-0 z-[1] bg-linear-to-t from-ink/85 via-ink/25 to-transparent transition-opacity duration-300 ${
-            showChrome
-              ? "opacity-100"
-              : "opacity-0 group-hover:opacity-100"
-          }`}
-        />
+          className="absolute inset-0 z-[1]"
+          aria-label={item.title || "Open wallpaper"}
+        >
+          <span
+            className={`absolute inset-0 bg-linear-to-t from-ink/90 via-ink/25 to-transparent transition-opacity duration-300 ${
+              showChrome ? "opacity-100" : "opacity-80 group-hover:opacity-100"
+            }`}
+          />
+        </Link>
 
         <button
           type="button"
@@ -124,19 +135,13 @@ function GalleryItem({ item }) {
           </div>
         )}
 
-        {/* Title stays left of action buttons to avoid overlap */}
+        {/* Title always visible so the feed never looks empty */}
         {item.title && (
-          <div
-            className={`pointer-events-none absolute bottom-0 left-0 right-[5.5rem] z-[2] p-3 transition-opacity duration-300 sm:p-4 ${
-              showChrome
-                ? "opacity-100"
-                : "opacity-0 group-hover:opacity-100"
-            }`}
-          >
-            <p className="truncate text-sm font-medium text-white drop-shadow-lg">
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-[2] p-3 sm:p-4">
+            <p className="truncate pr-20 text-sm font-medium text-white drop-shadow-lg">
               {item.title}
             </p>
-            <div className="mt-1 flex flex-wrap gap-1">
+            <div className="mt-1 flex flex-wrap gap-1 pr-20">
               {item.deviceType && (
                 <span className="rounded bg-black/45 px-1.5 py-0.5 text-[10px] capitalize text-white/85">
                   {item.deviceType}
@@ -205,7 +210,7 @@ function GalleryItem({ item }) {
           />
         </div>
       </div>
-    </div>
+    </article>
   );
 }
 

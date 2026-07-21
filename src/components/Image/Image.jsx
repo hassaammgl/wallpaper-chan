@@ -31,27 +31,36 @@ function Image({
   priority = false,
   sizes,
 }) {
-  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   const mediaKey = src || path || pin?.media;
   const provider = uploadProvider || pin?.uploadProvider || "imagekit";
+  const originalUrl = pin?.originalUrl;
 
-  const resolved =
-    mediaKey && !failed
-      ? resolveMediaSrc(mediaKey, {
-          provider,
-          mode,
-          width: w || 800,
-          originalUrl: pin?.originalUrl,
-          originalMedia: pin?.originalMedia,
-        })
-      : null;
+  const candidates = [];
+  const primary = resolveMediaSrc(mediaKey, {
+    provider,
+    mode,
+    width: w || 800,
+    originalUrl,
+    originalMedia: pin?.originalMedia,
+  });
+  if (primary) candidates.push(primary);
+  if (originalUrl && isCdnPath(originalUrl) && !candidates.includes(originalUrl)) {
+    candidates.push(originalUrl);
+  }
+  candidates.push(FALLBACK);
 
-  const url = resolved || FALLBACK;
+  const url = candidates[Math.min(attempt, candidates.length - 1)] || FALLBACK;
+
   const useNativeImg =
     url.startsWith("blob:") ||
     url.startsWith("data:") ||
     (!isLocalMediaPath(url) && isCdnPath(url));
+
+  const onError = () => {
+    setAttempt((prev) => Math.min(prev + 1, candidates.length - 1));
+  };
 
   if (useNativeImg) {
     if (fill) {
@@ -61,7 +70,7 @@ function Image({
           src={url}
           alt={alt}
           className={`absolute inset-0 h-full w-full ${className}`}
-          onError={() => setFailed(true)}
+          onError={onError}
         />
       );
     }
@@ -74,7 +83,7 @@ function Image({
         className={className}
         width={w}
         height={h}
-        onError={() => setFailed(true)}
+        onError={onError}
       />
     );
   }
@@ -88,7 +97,7 @@ function Image({
         className={className}
         sizes={sizes || "(max-width: 768px) 50vw, 25vw"}
         priority={priority}
-        onError={() => setFailed(true)}
+        onError={onError}
       />
     );
   }
@@ -104,7 +113,7 @@ function Image({
       className={className}
       sizes={sizes}
       priority={priority}
-      onError={() => setFailed(true)}
+      onError={onError}
     />
   );
 }

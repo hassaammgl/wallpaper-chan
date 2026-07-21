@@ -18,6 +18,13 @@ export function isCdnPath(value) {
   );
 }
 
+function withImageKitWidth(url, width, mode = "display") {
+  if (!url || mode === "original") return url;
+  if (!/imagekit\.io/i.test(url)) return url;
+  const base = String(url).split("?")[0];
+  return `${base}?tr=w-${width},q-80`;
+}
+
 function buildImageKitUrl(mediaKey, { width = 800, mode = "display" } = {}) {
   if (!IK_ENDPOINT || !mediaKey) return null;
   const path = mediaKey.startsWith("/") ? mediaKey : `/${mediaKey}`;
@@ -47,21 +54,31 @@ export function resolveMediaSrc(
     originalMedia,
   } = {}
 ) {
-  if (!mediaKey) return null;
+  const key = mediaKey || originalMedia;
+  if (!key && !originalUrl) return null;
 
-  if (isCdnPath(mediaKey)) return mediaKey;
-  if (isLocalMediaPath(mediaKey)) return mediaKey;
+  if (key && isCdnPath(key)) {
+    return mode === "original" ? key : withImageKitWidth(key, width, mode);
+  }
+  if (key && isLocalMediaPath(key)) return key;
 
   if (provider === "cloudinary") {
-    const key = mediaKey;
-    const originalKey = originalMedia || key;
+    const cloudKey = key || originalMedia;
+    const originalKey = originalMedia || cloudKey;
     return mode === "original"
       ? originalUrl || buildCloudinaryOriginalUrl(originalKey)
-      : buildCloudinaryDisplayUrl(key, { width });
+      : buildCloudinaryDisplayUrl(cloudKey, { width });
   }
 
-  const key = mode === "original" ? originalMedia || mediaKey : mediaKey;
-  return buildImageKitUrl(key, { width, mode });
+  // Prefer the absolute URL saved at upload — works even if public IK env is missing client-side
+  if (originalUrl && isCdnPath(originalUrl)) {
+    return mode === "original"
+      ? originalUrl
+      : withImageKitWidth(originalUrl, width, mode);
+  }
+
+  const pathKey = mode === "original" ? originalMedia || key : key;
+  return buildImageKitUrl(pathKey, { width, mode });
 }
 
 export function getDownloadUrl(mediaKey, provider, originalUrl) {
