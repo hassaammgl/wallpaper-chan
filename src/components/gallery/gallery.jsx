@@ -136,7 +136,7 @@ function Gallery({ search, userId, boardId, deviceType }) {
 
   return (
     <div>
-      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 auto-rows-[10px]">
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 auto-rows-[10px] isolate">
         {pins.map((item) => (
           <GalleryItem key={item._id} item={item} />
         ))}

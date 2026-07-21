@@ -28,11 +28,9 @@ function MainLayout({ children }) {
   return (
     <div className="mesh-bg min-h-screen">
       <LeftBar />
-      <div className="flex min-h-screen flex-col px-4 pb-24 md:pl-[88px] md:pr-6 md:pb-8 lg:pr-8">
+      <div className="relative z-0 flex min-h-screen flex-col px-4 pb-28 md:pl-[100px] md:pr-6 md:pb-8 lg:pr-8">
         <TopBar />
-        <main className="flex-1 animate-fade-up overflow-y-auto pb-8">
-          {children}
-        </main>
+        <main className="relative z-0 flex-1 pb-6 md:pb-8">{children}</main>
       </div>
     </div>
   );

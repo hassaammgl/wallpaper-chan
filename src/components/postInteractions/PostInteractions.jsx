@@ -110,81 +110,85 @@ function PostInteractions({ postId, title }) {
   const isAdmin = currentUser?.role === "admin";
 
   return (
-    <div className="relative flex items-center justify-between">
-      <div className="flex items-center gap-3">
+    <div className="relative flex flex-col gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+          <button
+            type="button"
+            onClick={() => handleInteract("like")}
+            className={`flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-all ${
+              data.isLiked
+                ? "bg-parrot/15 text-parrot"
+                : "text-muted hover:bg-panel-hover hover:text-fog"
+            }`}
+          >
+            <HiHeart size={20} className={data.isLiked ? "fill-current" : ""} />
+            {data.likeCount}
+          </button>
+          <ShareButton
+            title={title}
+            text={
+              title
+                ? `Check out this wallpaper: ${title}`
+                : "Check out this wallpaper"
+            }
+            url={`/pins/${postId}`}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-panel-hover hover:text-fog disabled:opacity-50"
+          />
+          <OptionsMenu
+            align="left"
+            buttonClassName="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-panel-hover hover:text-fog"
+            items={[
+              {
+                label: "Copy link",
+                icon: <HiLink size={16} />,
+                onClick: handleCopyLink,
+              },
+              {
+                label: "Download",
+                icon: <HiArrowDownTray size={16} />,
+                onClick: handleDownload,
+              },
+              {
+                label: data.isSaved ? "Unsave" : "Save",
+                icon: <HiBookmark size={16} />,
+                onClick: () => handleInteract("save"),
+              },
+              isAdmin && {
+                label: "Edit in admin",
+                icon: <HiPencilSquare size={16} />,
+                onClick: () => router.push("/admin/pins"),
+              },
+              isAdmin && {
+                label: "Delete wallpaper",
+                icon: <HiTrash size={16} />,
+                danger: true,
+                onClick: handleDelete,
+              },
+              !isAdmin && {
+                label: "Report",
+                icon: <HiFlag size={16} />,
+                onClick: () => showToast("Thanks — report noted"),
+              },
+            ]}
+          />
+        </div>
+
         <button
-          onClick={() => handleInteract("like")}
-          className={`flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-all ${
-            data.isLiked
-              ? "bg-parrot/15 text-parrot"
-              : "text-muted hover:bg-panel-hover hover:text-fog"
+          type="button"
+          onClick={() => handleInteract("save")}
+          className={`shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold transition-all disabled:opacity-50 ${
+            data.isSaved
+              ? "border border-accent/40 bg-accent-soft text-accent"
+              : "btn-primary"
           }`}
         >
-          <HiHeart size={20} className={data.isLiked ? "fill-current" : ""} />
-          {data.likeCount}
+          {data.isSaved ? "Saved" : "Save"}
         </button>
-        <ShareButton
-          title={title}
-          text={
-            title
-              ? `Check out this wallpaper: ${title}`
-              : "Check out this wallpaper"
-          }
-          url={`/pins/${postId}`}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-panel-hover hover:text-fog disabled:opacity-50"
-        />
-        <OptionsMenu
-          align="left"
-          buttonClassName="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-panel-hover hover:text-fog"
-          items={[
-            {
-              label: "Copy link",
-              icon: <HiLink size={16} />,
-              onClick: handleCopyLink,
-            },
-            {
-              label: "Download",
-              icon: <HiArrowDownTray size={16} />,
-              onClick: handleDownload,
-            },
-            {
-              label: data.isSaved ? "Unsave" : "Save",
-              icon: <HiBookmark size={16} />,
-              onClick: () => handleInteract("save"),
-            },
-            isAdmin && {
-              label: "Edit in admin",
-              icon: <HiPencilSquare size={16} />,
-              onClick: () => router.push("/admin/pins"),
-            },
-            isAdmin && {
-              label: "Delete wallpaper",
-              icon: <HiTrash size={16} />,
-              danger: true,
-              onClick: handleDelete,
-            },
-            !isAdmin && {
-              label: "Report",
-              icon: <HiFlag size={16} />,
-              onClick: () => showToast("Thanks — report noted"),
-            },
-          ]}
-        />
       </div>
 
-      <button
-        onClick={() => handleInteract("save")}
-        className={`rounded-full px-5 py-2.5 text-sm font-semibold transition-all disabled:opacity-50 ${
-          data.isSaved
-            ? "border border-accent/40 bg-accent-soft text-accent"
-            : "btn-primary"
-        }`}
-      >
-        {data.isSaved ? "Saved" : "Save"}
-      </button>
-
       {toast && (
-        <div className="absolute -bottom-10 left-0 rounded-full border border-line bg-panel px-3 py-1 text-xs text-fog">
+        <div className="rounded-xl border border-line bg-panel/80 px-3 py-1.5 text-xs text-fog">
           {toast}
         </div>
       )}

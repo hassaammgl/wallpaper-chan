@@ -16,11 +16,11 @@ const baseNavItems = [
   { to: "/alerts", icon: HiBell, label: "Alerts" },
 ];
 
-function NavLinks({ pathname, className = "", isAdmin = false }) {
+function NavLinks({ pathname, isAdmin = false }) {
   const navItems = isAdmin
     ? [
         baseNavItems[0],
-        { to: "/create", icon: HiPlusCircle, label: "Create" },
+        { to: "/create", icon: HiPlusCircle, label: "Upload" },
         ...baseNavItems.slice(1),
       ]
     : baseNavItems;
@@ -32,13 +32,14 @@ function NavLinks({ pathname, className = "", isAdmin = false }) {
         key={label}
         href={to}
         title={label}
-        className={`group relative flex h-11 w-11 items-center justify-center rounded-2xl transition-all duration-200 ${
+        aria-label={label}
+        className={`flex h-11 w-11 items-center justify-center rounded-2xl transition-all duration-200 ${
           isActive
-            ? "bg-accent-soft text-accent glow-ring"
+            ? "bg-accent text-ink shadow-lg shadow-accent/25"
             : "text-muted hover:bg-panel-hover hover:text-fog"
-        } ${className}`}
+        }`}
       >
-        <Icon size={22} />
+        <Icon size={20} />
       </Link>
     );
   });
@@ -51,10 +52,11 @@ function LeftBar() {
 
   return (
     <>
-      <aside className="fixed top-4 left-4 bottom-4 z-50 hidden w-[60px] flex-col items-center justify-between rounded-[28px] glass py-5 shadow-2xl shadow-black/40 md:flex">
-        <div className="flex flex-col items-center gap-1">
+      <aside className="fixed top-4 left-4 bottom-4 z-50 hidden w-[68px] flex-col items-center justify-between overflow-visible rounded-[28px] border border-line/80 bg-panel/90 py-5 shadow-2xl shadow-black/40 backdrop-blur-xl md:flex">
+        <div className="flex flex-col items-center gap-1.5">
           <Link
             href="/"
+            title="Wallpaper-chan"
             className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl transition-all hover:bg-panel-hover"
           >
             <NextImage
@@ -71,24 +73,30 @@ function LeftBar() {
         <Link
           href="/settings"
           title="Settings"
-          className="flex h-11 w-11 items-center justify-center rounded-2xl text-muted transition-all hover:bg-panel-hover hover:text-fog"
+          aria-label="Settings"
+          className={`flex h-11 w-11 items-center justify-center rounded-2xl transition-all ${
+            pathname.startsWith("/settings")
+              ? "bg-accent text-ink shadow-lg shadow-accent/25"
+              : "text-muted hover:bg-panel-hover hover:text-fog"
+          }`}
         >
-          <HiCog6Tooth size={22} />
+          <HiCog6Tooth size={20} />
         </Link>
       </aside>
 
-      <nav className="fixed inset-x-3 bottom-3 z-50 flex items-center justify-around rounded-[24px] glass px-2 py-2 shadow-2xl shadow-black/40 md:hidden">
+      <nav className="fixed inset-x-3 bottom-3 z-50 flex items-center justify-around rounded-[24px] border border-line/80 bg-panel/95 px-2 py-2 shadow-2xl shadow-black/50 backdrop-blur-xl md:hidden">
         <NavLinks pathname={pathname} isAdmin={isAdmin} />
         <Link
           href="/settings"
           title="Settings"
+          aria-label="Settings"
           className={`flex h-11 w-11 items-center justify-center rounded-2xl transition-all ${
             pathname.startsWith("/settings")
-              ? "bg-accent-soft text-accent glow-ring"
+              ? "bg-accent text-ink"
               : "text-muted hover:bg-panel-hover hover:text-fog"
           }`}
         >
-          <HiCog6Tooth size={22} />
+          <HiCog6Tooth size={20} />
         </Link>
       </nav>
     </>
