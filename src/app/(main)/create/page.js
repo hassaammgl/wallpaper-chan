@@ -573,25 +573,19 @@ function CreatePageContent() {
         <div className="grid gap-8 lg:grid-cols-2">
           <div className="rounded-[28px] border border-line glass p-5">
             {previewImg.url ? (
-              <div className="relative flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-canvas">
-                <Image
+              <div className="relative flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-canvas p-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={previewImg.url}
-                  path={!file && uploadedMedia ? uploadedMedia.filePath : undefined}
-                  pin={
-                    !file && uploadedMedia
-                      ? {
-                          media: uploadedMedia.filePath,
-                          uploadProvider: uploadedMedia.provider,
-                          width: uploadedMedia.width,
-                          height: uploadedMedia.height,
-                        }
-                      : undefined
-                  }
-                  uploadProvider={uploadedMedia?.provider}
                   alt="Preview"
-                  w={previewImg.width || 800}
-                  h={previewImg.height}
-                  className="max-h-[420px] w-full object-contain"
+                  style={{
+                    maxHeight: 380,
+                    maxWidth: "100%",
+                    width: "auto",
+                    height: "auto",
+                    objectFit: "contain",
+                    display: "block",
+                  }}
                 />
                 {previewImg.width > 0 && (
                   <span className="mt-2 font-mono text-xs text-muted">

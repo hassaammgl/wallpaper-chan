@@ -26,20 +26,27 @@ function PinPage() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchPin = async () => {
       try {
         const res = await apiRequest.get(`/api/pins/${id}`);
+        if (cancelled) return;
         setData(res.data);
         apiRequest.post("/api/history", { pinId: id }).catch(() => {});
       } catch (err) {
-        setError(
-          err.response?.data?.message || err.message || "Failed to load pin"
-        );
+        if (!cancelled) {
+          setError(
+            err.response?.data?.message || err.message || "Failed to load pin"
+          );
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchPin();
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   const handleDownload = async () => {
@@ -92,43 +99,58 @@ function PinPage() {
     resolveMediaSrc(data.media, {
       provider: data.uploadProvider || "imagekit",
       mode: "display",
-      width: 1200,
+      width: 900,
       originalUrl: data.originalUrl,
       originalMedia: data.originalMedia,
-    }) || data.originalUrl;
+    }) ||
+    data.originalUrl ||
+    "";
 
   return (
-    <div className="mx-auto max-w-5xl animate-fade-up space-y-4">
+    <div className="mx-auto max-w-4xl space-y-4">
       <button
         type="button"
         onClick={() => router.back()}
-        className="inline-flex items-center gap-2 rounded-full border border-line bg-panel/70 px-3.5 py-2 text-sm text-muted transition-colors hover:border-accent/30 hover:text-fog"
+        className="inline-flex items-center gap-2 rounded-full border border-line bg-panel/70 px-3.5 py-2 text-sm text-muted hover:text-fog"
       >
         <HiArrowLeft size={16} />
         Back
       </button>
 
-      <div className="overflow-hidden rounded-2xl border border-line bg-panel/40 lg:grid lg:grid-cols-[1fr_320px]">
-        <div className="flex items-center justify-center bg-canvas p-4 sm:p-6">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={previewSrc}
-            alt={data.title || "Wallpaper"}
-            className="h-auto max-h-[min(65vh,640px)] w-auto max-w-full rounded-xl object-contain"
-            loading="eager"
-          />
+      <div className="overflow-hidden rounded-2xl border border-line bg-panel/40 lg:grid lg:grid-cols-[minmax(0,1fr)_300px]">
+        {/* Preview box — hard-capped so tall wallpapers cannot blow up the page */}
+        <div
+          className="flex items-center justify-center overflow-hidden bg-canvas"
+          style={{ height: "min(52vh, 480px)", maxHeight: 480 }}
+        >
+          {previewSrc ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={previewSrc}
+              alt={data.title || "Wallpaper"}
+              style={{
+                maxHeight: "100%",
+                maxWidth: "100%",
+                width: "auto",
+                height: "auto",
+                objectFit: "contain",
+                display: "block",
+              }}
+              loading="eager"
+            />
+          ) : (
+            <p className="text-sm text-muted">No preview</p>
+          )}
         </div>
 
-        <aside className="flex min-h-0 flex-col border-t border-line lg:border-t-0 lg:border-l">
-          <div className="space-y-4 border-b border-line p-5">
-            <div className="space-y-1.5">
+        <aside className="border-t border-line lg:border-t-0 lg:border-l">
+          <div className="space-y-4 p-5">
+            <div className="space-y-1">
               <h1 className="text-lg font-bold leading-snug text-fog">
-                {data.title || "Untitled wallpaper"}
+                {data.title || "Untitled"}
               </h1>
               {data.description && (
-                <p className="text-sm leading-relaxed text-muted">
-                  {data.description}
-                </p>
+                <p className="text-sm text-muted">{data.description}</p>
               )}
             </div>
 
@@ -148,77 +170,68 @@ function PinPage() {
 
             <div className="flex flex-wrap gap-1.5">
               {data.deviceType && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-line bg-canvas/60 px-2.5 py-1 text-[11px] capitalize text-muted">
+                <span className="inline-flex items-center gap-1 rounded-full border border-line px-2.5 py-1 text-[11px] capitalize text-muted">
                   <DeviceIcon size={12} />
                   {data.deviceType}
                 </span>
               )}
               {data.category && (
-                <span className="rounded-full border border-line bg-canvas/60 px-2.5 py-1 text-[11px] capitalize text-muted">
+                <span className="rounded-full border border-line px-2.5 py-1 text-[11px] capitalize text-muted">
                   {data.category}
                 </span>
               )}
+              {data?.tags?.map((tag) => (
+                <Link
+                  key={tag}
+                  href={`/search?search=${encodeURIComponent(tag)}`}
+                  className="rounded-full bg-accent-soft px-2.5 py-1 text-[11px] text-accent"
+                >
+                  #{tag}
+                </Link>
+              ))}
             </div>
 
-            {data?.tags?.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {data.tags.map((tag) => (
-                  <Link
-                    key={tag}
-                    href={`/search?search=${encodeURIComponent(tag)}`}
-                    className="rounded-full border border-accent/20 bg-accent-soft px-2.5 py-1 text-[11px] font-medium text-accent hover:opacity-80"
-                  >
-                    #{tag}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
             {data?.album && (
               <Link
                 href={`/albums/${data.album._id}`}
-                className="flex items-center gap-2 rounded-xl border border-line bg-canvas/50 px-3 py-2.5 text-sm text-muted hover:border-accent/30 hover:text-fog"
+                className="flex items-center gap-2 rounded-xl border border-line px-3 py-2 text-sm text-muted hover:text-fog"
               >
                 <HiRectangleStack size={16} className="text-accent" />
-                <span className="truncate">{data.album.title}</span>
+                {data.album.title}
               </Link>
             )}
 
             {data?.user && (
               <Link
                 href={`/${data.user.userName}`}
-                className="flex items-center gap-3 rounded-xl border border-line bg-canvas/50 p-3 hover:border-accent/25"
+                className="flex items-center gap-3 rounded-xl border border-line p-3"
               >
                 <Image
                   path={data.user.img || "/general/noAvatar.svg"}
-                  alt={
-                    data.user.displayName || data.user.userName || "User avatar"
-                  }
-                  w={40}
-                  h={40}
-                  className="h-10 w-10 rounded-xl object-cover"
+                  alt={data.user.displayName || "avatar"}
+                  w={36}
+                  h={36}
+                  className="h-9 w-9 rounded-lg object-cover"
                 />
                 <div className="min-w-0">
-                  <span className="block truncate text-sm font-semibold text-fog">
+                  <p className="truncate text-sm font-semibold text-fog">
                     {data.user.displayName}
-                  </span>
-                  <span className="text-xs text-muted">
-                    @{data.user.userName}
-                  </span>
+                  </p>
+                  <p className="text-xs text-muted">@{data.user.userName}</p>
                 </div>
               </Link>
             )}
 
             {data.prompt && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-1.5 text-xs font-medium text-accent">
-                  <HiSparkles size={12} />
-                  AI Prompt
-                </div>
-                <div className="rounded-xl border border-line bg-canvas/70 p-3">
-                  <p className="whitespace-pre-wrap font-mono text-xs leading-relaxed text-muted">
+              <div className="space-y-1.5">
+                <p className="flex items-center gap-1 text-xs font-medium text-accent">
+                  <HiSparkles size={12} /> AI Prompt
+                </p>
+                <div
+                  className="overflow-y-auto rounded-xl border border-line bg-canvas/70 p-3"
+                  style={{ maxHeight: 140 }}
+                >
+                  <p className="whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-muted">
                     {data.prompt}
                   </p>
                 </div>
