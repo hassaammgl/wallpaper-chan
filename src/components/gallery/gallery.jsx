@@ -6,10 +6,7 @@ import apiRequest from "@/lib/apiRequest";
 
 function PinSkeleton() {
   return (
-    <div
-      className="rounded-[20px] bg-panel ring-1 ring-line animate-pulse"
-      style={{ gridRowEnd: "span 25", minHeight: 200 }}
-    />
+    <div className="aspect-[3/4] animate-pulse rounded-2xl bg-panel ring-1 ring-line" />
   );
 }
 
@@ -103,9 +100,11 @@ function Gallery({ search, userId, boardId, deviceType }) {
 
   if (loading && pins.length === 0) {
     return (
-      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 auto-rows-[10px]">
+      <div className="columns-2 gap-3 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-6">
         {Array.from({ length: 12 }).map((_, i) => (
-          <PinSkeleton key={i} />
+          <div key={i} className="mb-3 break-inside-avoid">
+            <PinSkeleton />
+          </div>
         ))}
       </div>
     );
@@ -113,23 +112,19 @@ function Gallery({ search, userId, boardId, deviceType }) {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-[28px] border border-line glass py-20 text-center">
-        <p className="text-lg font-medium text-fog">
-          Couldn&apos;t load wallpapers
-        </p>
-        <p className="text-sm text-muted">
-          Check your connection and try again
-        </p>
+      <div className="rounded-2xl border border-line bg-panel/40 py-16 text-center">
+        <p className="font-medium text-fog">Couldn&apos;t load wallpapers</p>
+        <p className="mt-1 text-sm text-muted">Try again in a moment</p>
       </div>
     );
   }
 
   if (pins.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-[28px] border border-line glass py-20 text-center">
-        <p className="text-lg font-medium text-fog">No wallpapers found</p>
-        <p className="text-sm text-muted">
-          Try a different search or check back later
+      <div className="rounded-2xl border border-line bg-panel/40 py-16 text-center">
+        <p className="font-medium text-fog">No wallpapers found</p>
+        <p className="mt-1 text-sm text-muted">
+          Try a different filter or check back later
         </p>
       </div>
     );
@@ -137,20 +132,20 @@ function Gallery({ search, userId, boardId, deviceType }) {
 
   return (
     <div>
-      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 auto-rows-[10px] isolate">
+      <div className="columns-2 gap-3 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-6">
         {pins.map((item) => (
-          <GalleryItem key={item._id} item={item} />
+          <div key={item._id} className="mb-3 break-inside-avoid">
+            <GalleryItem item={item} />
+          </div>
         ))}
       </div>
       {loading && (
         <div className="flex justify-center py-8">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-accent" />
+          <div className="h-7 w-7 animate-spin rounded-full border-2 border-line border-t-accent" />
         </div>
       )}
       {!hasMore && pins.length > 0 && (
-        <p className="py-8 text-center text-sm text-muted">
-          You&apos;ve seen it all
-        </p>
+        <p className="py-8 text-center text-sm text-muted">That&apos;s all</p>
       )}
     </div>
   );

@@ -75,14 +75,13 @@ function Image({
       );
     }
 
+    // Never set huge HTML width/height — CSS should control display size
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={url}
         alt={alt}
-        className={className}
-        width={w}
-        height={h}
+        className={className || "h-auto max-w-full"}
         onError={onError}
       />
     );
