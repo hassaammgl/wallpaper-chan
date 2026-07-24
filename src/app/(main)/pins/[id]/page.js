@@ -15,6 +15,8 @@ import {
   HiComputerDesktop,
   HiSparkles,
   HiRectangleStack,
+  HiArrowsPointingOut,
+  HiXMark,
 } from "react-icons/hi2";
 
 function PinPage() {
@@ -23,6 +25,7 @@ function PinPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -48,6 +51,19 @@ function PinPage() {
       cancelled = true;
     };
   }, [id]);
+
+  useEffect(() => {
+    if (!fullscreen) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setFullscreen(false);
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [fullscreen]);
 
   const handleDownload = async () => {
     if (downloading) return;
@@ -106,6 +122,17 @@ function PinPage() {
     data.originalUrl ||
     "";
 
+  const fullscreenSrc =
+    resolveMediaSrc(data.media, {
+      provider: data.uploadProvider || "imagekit",
+      mode: "display",
+      width: 1920,
+      originalUrl: data.originalUrl,
+      originalMedia: data.originalMedia,
+    }) ||
+    data.originalUrl ||
+    previewSrc;
+
   return (
     <div className="mx-auto max-w-4xl space-y-4">
       <button
@@ -118,10 +145,19 @@ function PinPage() {
       </button>
 
       <div className="overflow-hidden rounded-2xl border border-line bg-panel/40 lg:grid lg:grid-cols-[minmax(0,1fr)_300px]">
-        {/* Preview box — hard-capped so tall wallpapers cannot blow up the page */}
         <div
-          className="flex items-center justify-center overflow-hidden bg-canvas"
+          className="group relative flex cursor-zoom-in items-center justify-center overflow-hidden bg-canvas"
           style={{ height: "min(52vh, 480px)", maxHeight: 480 }}
+          onClick={() => previewSrc && setFullscreen(true)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              if (previewSrc) setFullscreen(true);
+            }
+          }}
+          aria-label="Open full screen preview"
         >
           {previewSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -140,6 +176,19 @@ function PinPage() {
             />
           ) : (
             <p className="text-sm text-muted">No preview</p>
+          )}
+          {previewSrc && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setFullscreen(true);
+              }}
+              className="absolute right-3 bottom-3 flex items-center gap-1.5 rounded-full border border-white/15 bg-ink/70 px-3 py-1.5 text-xs font-medium text-white opacity-100 backdrop-blur-sm transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+            >
+              <HiArrowsPointingOut size={14} />
+              Full screen
+            </button>
           )}
         </div>
 
@@ -244,6 +293,39 @@ function PinPage() {
           </div>
         </aside>
       </div>
+
+      {fullscreen && fullscreenSrc && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/95 p-3 backdrop-blur-sm sm:p-6"
+          onClick={() => setFullscreen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Full screen wallpaper preview"
+        >
+          <button
+            type="button"
+            onClick={() => setFullscreen(false)}
+            className="absolute top-4 right-4 z-[101] flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition-colors hover:bg-white/20"
+            aria-label="Close full screen"
+          >
+            <HiXMark size={22} />
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={fullscreenSrc}
+            alt={data.title || "Wallpaper"}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxHeight: "92vh",
+              maxWidth: "96vw",
+              width: "auto",
+              height: "auto",
+              objectFit: "contain",
+              borderRadius: 12,
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
