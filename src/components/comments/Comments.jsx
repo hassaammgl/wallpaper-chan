@@ -43,9 +43,9 @@ function Comments({ pinId, albumId }) {
     );
   }
 
-  if (error)
+  if (error) {
     return <p className="text-sm text-danger">Failed to load comments</p>;
-
+  }
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       <div className="flex flex-1 flex-col gap-4 overflow-y-auto pr-1">

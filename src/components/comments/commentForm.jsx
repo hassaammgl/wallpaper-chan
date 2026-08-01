@@ -44,7 +44,7 @@ function CommentForm({ pinId, albumId, onAdd }) {
         disabled={!desc.trim() || loading}
         className="flex size-9 items-center justify-center rounded-full bg-accent text-ink transition-all hover:brightness-110 disabled:opacity-30"
       >
-        <HiPaperAirplane size={16} />
+        <HiPaperAirplane size={6} />
       </button>
     </form>
   );
