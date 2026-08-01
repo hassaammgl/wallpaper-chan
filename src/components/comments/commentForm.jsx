@@ -42,9 +42,9 @@ function CommentForm({ pinId, albumId, onAdd }) {
       <button
         type="submit"
         disabled={!desc.trim() || loading}
-        className="flex size-9 items-center justify-center rounded-full bg-accent text-ink transition-all hover:brightness-110 disabled:opacity-30"
+        className="flex size-9 px-4 items-center justify-center rounded-full bg-accent text-ink transition-all hover:brightness-110 disabled:opacity-30"
       >
-        <HiPaperAirplane size={16} className="mx-4" />
+        <HiPaperAirplane size={16} />
       </button>
     </form>
   );
