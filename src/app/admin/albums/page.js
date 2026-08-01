@@ -4,37 +4,19 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "@/components/Image/Image";
 import apiRequest from "@/lib/apiRequest";
-import { uploadWallpaper } from "@/lib/uploadWallpaper";
 import { format } from "timeago.js";
 import {
   HiMagnifyingGlass,
   HiPlus,
-  HiXMark,
   HiPencilSquare,
   HiTrash,
   HiEye,
   HiEyeSlash,
   HiRectangleStack,
-  HiArrowUpTray,
 } from "react-icons/hi2";
 
 const inputClass =
   "w-full rounded-xl border border-line bg-canvas/80 px-3 py-2.5 text-sm text-fog outline-none focus:border-accent/50";
-
-const CATEGORIES = [
-  "general",
-  "anime",
-  "nature",
-  "abstract",
-  "gaming",
-  "minimal",
-  "dark",
-  "amoled",
-  "cars",
-  "space",
-  "fantasy",
-  "cityscape",
-];
 
 function AlbumFormModal({ album, onClose, onSaved }) {
   const isEdit = Boolean(album?._id);
@@ -43,39 +25,6 @@ function AlbumFormModal({ album, onClose, onSaved }) {
   const [isPublic, setIsPublic] = useState(album?.isPublic !== false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-
-  const [pins, setPins] = useState([]);
-  const [pinsLoading, setPinsLoading] = useState(false);
-  const [showAdd, setShowAdd] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
-  const [newDesc, setNewDesc] = useState("");
-  const [newCategory, setNewCategory] = useState("general");
-  const [newFile, setNewFile] = useState(null);
-  const [newPreview, setNewPreview] = useState("");
-  const [newUploading, setNewUploading] = useState(false);
-  const [newProgress, setNewProgress] = useState(0);
-  const [newError, setNewError] = useState("");
-
-  useEffect(() => {
-    if (!isEdit || !album?._id) return;
-    let cancelled = false;
-    const load = async () => {
-      setPinsLoading(true);
-      try {
-        const res = await apiRequest.get(`/api/admin/albums/${album._id}/pins`);
-        if (cancelled) return;
-        setPins(Array.isArray(res.data.pins) ? res.data.pins : []);
-      } catch {
-        if (!cancelled) setPins([]);
-      } finally {
-        if (!cancelled) setPinsLoading(false);
-      }
-    };
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [isEdit, album?._id]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -106,78 +55,11 @@ function AlbumFormModal({ album, onClose, onSaved }) {
     }
   };
 
-  const handleRemovePin = async (pinId) => {
-    if (
-      !confirm(
-        "Remove this wallpaper from the album? It stays published as uncategorized."
-      )
-    ) {
-      return;
-    }
-    try {
-      await apiRequest.patch(`/api/admin/pins/${pinId}`, { board: "general" });
-      setPins((prev) => prev.filter((p) => p._id !== pinId));
-      onSaved();
-    } catch (err) {
-      setNewError(err.response?.data?.message || "Failed to remove wallpaper");
-    }
-  };
-
-  const handleAddPin = async (e) => {
-    e.preventDefault();
-    if (!newFile) {
-      setNewError("Select an image first");
-      return;
-    }
-    if (!newTitle.trim() || !newDesc.trim()) {
-      setNewError("Title and description are required");
-      return;
-    }
-    setNewUploading(true);
-    setNewError("");
-    setNewProgress(0);
-    try {
-      const media = await uploadWallpaper(newFile, {
-        onProgress: setNewProgress,
-      });
-      const res = await apiRequest.post(
-        `/api/admin/albums/${album._id}/pins`,
-        {
-          title: newTitle.trim(),
-          description: newDesc.trim(),
-          category: newCategory,
-          media: media.filePath,
-          originalMedia: media.originalMedia,
-          originalUrl: media.originalUrl,
-          uploadProvider: media.provider,
-          width: media.width,
-          height: media.height,
-          resolution: `${media.width}x${media.height}`,
-          deviceType: "both",
-        }
-      );
-      setPins((prev) => [res.data.data, ...prev]);
-      setNewTitle("");
-      setNewDesc("");
-      setNewCategory("general");
-      setNewFile(null);
-      setNewPreview("");
-      setShowAdd(false);
-      onSaved();
-    } catch (err) {
-      setNewError(
-        err.response?.data?.message || err.message || "Upload failed"
-      );
-    } finally {
-      setNewUploading(false);
-    }
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4 backdrop-blur-sm">
       <form
         onSubmit={handleSubmit}
-        className="max-h-[90vh] w-full max-w-md space-y-4 overflow-y-auto rounded-[28px] border border-line glass p-6"
+        className="w-full max-w-md space-y-4 rounded-[28px] border border-line glass p-6"
       >
         <h3 className="text-lg font-semibold text-fog">
           {isEdit ? "Edit album" : "Create album"}
@@ -215,201 +97,6 @@ function AlbumFormModal({ album, onClose, onSaved }) {
           />
           Public album
         </label>
-
-        {isEdit && (
-          <div className="space-y-3 border-t border-line pt-4">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-medium uppercase tracking-wider text-muted">
-                Wallpapers ({pins.length})
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowAdd((v) => !v);
-                  setNewError("");
-                }}
-                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-accent-soft px-3 py-1.5 text-xs font-medium text-accent transition-all hover:bg-accent/20"
-              >
-                {showAdd ? (
-                  <>
-                    <HiXMark size={12} /> Cancel
-                  </>
-                ) : (
-                  <>
-                    <HiPlus size={12} /> Add wallpaper
-                  </>
-                )}
-              </button>
-            </div>
-
-            {showAdd && (
-              <form
-                onSubmit={handleAddPin}
-                className="space-y-3 rounded-2xl border border-line bg-canvas/60 p-3"
-              >
-                {newError && (
-                  <p className="text-xs text-danger">{newError}</p>
-                )}
-
-                {newFile ? (
-                  <div className="flex items-center gap-3 rounded-xl border border-line bg-panel/40 p-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={newPreview}
-                      alt="Preview"
-                      className="h-14 w-14 shrink-0 rounded-lg object-cover"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-medium text-fog">
-                        {newFile.name}
-                      </p>
-                      <p className="text-[11px] text-muted">
-                        {(newFile.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setNewFile(null);
-                        setNewPreview("");
-                      }}
-                      className="rounded-lg p-1.5 text-muted hover:bg-panel-hover hover:text-fog"
-                    >
-                      <HiXMark size={14} />
-                    </button>
-                  </div>
-                ) : (
-                  <label className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-line py-6 text-xs text-muted transition-all hover:border-accent/40 hover:text-fog">
-                    <HiArrowUpTray size={18} />
-                    <span>Choose an image to add</span>
-                    <input
-                      className="hidden"
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0] || null;
-                        setNewFile(f);
-                        setNewPreview(f ? URL.createObjectURL(f) : "");
-                      }}
-                    />
-                  </label>
-                )}
-
-                <div className="space-y-1">
-                  <label className="text-[11px] font-medium text-muted">
-                    Title *
-                  </label>
-                  <input
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    placeholder="e.g. Neon City at Night"
-                    className={inputClass}
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[11px] font-medium text-muted">
-                    Description *
-                  </label>
-                  <textarea
-                    value={newDesc}
-                    onChange={(e) => setNewDesc(e.target.value)}
-                    placeholder="Short description"
-                    rows={2}
-                    className={`${inputClass} resize-none`}
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[11px] font-medium text-muted">
-                    Category
-                  </label>
-                  <select
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    className={inputClass}
-                  >
-                    {CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {newUploading && (
-                  <div className="h-1 overflow-hidden rounded-full bg-line">
-                    <div
-                      className="h-full rounded-full bg-linear-to-r from-parrot-deep to-parrot transition-all duration-300"
-                      style={{ width: `${newProgress}%` }}
-                    />
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={newUploading}
-                  className="btn-primary w-full py-2.5 text-sm disabled:opacity-50"
-                >
-                  {newUploading
-                    ? `Uploading ${newProgress}%`
-                    : "Add to album"}
-                </button>
-              </form>
-            )}
-
-            {pinsLoading ? (
-              <div className="space-y-2">
-                {Array.from({ length: 2 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-14 animate-pulse rounded-xl bg-panel"
-                  />
-                ))}
-              </div>
-            ) : pins.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-line py-4 text-center text-xs text-muted">
-                No wallpapers in this album yet
-              </p>
-            ) : (
-              <div className="max-h-48 space-y-2 overflow-y-auto pr-1">
-                {pins.map((pin) => (
-                  <div
-                    key={pin._id}
-                    className="flex items-center gap-2.5 rounded-xl border border-line bg-panel/40 p-1.5"
-                  >
-                    <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-canvas">
-                      <Image
-                        path={pin.media}
-                        pin={pin}
-                        alt={pin.title}
-                        w={44}
-                        h={44}
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-medium text-fog">
-                        {pin.title}
-                      </p>
-                      <p className="text-[10px] text-muted">
-                        {pin.createdAt ? format(pin.createdAt) : "—"}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemovePin(pin._id)}
-                      title="Remove from album"
-                      className="rounded-lg p-1.5 text-muted transition-colors hover:bg-danger/10 hover:text-danger"
-                    >
-                      <HiTrash size={13} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
 
         <div className="flex gap-2 pt-2">
           <button
