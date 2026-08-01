@@ -41,8 +41,24 @@ function EditPinModal({ pin, onClose, onSaved }) {
   const [tags, setTags] = useState(
     Array.isArray(pin.tags) ? pin.tags.join(", ") : ""
   );
+  const [albums, setAlbums] = useState([]);
+  const [board, setBoard] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const ownerId = pin.user?.id || pin.user;
+    if (!ownerId) return;
+    apiRequest
+      .get(`/api/boards/${ownerId}`)
+      .then((res) => {
+        const list = Array.isArray(res.data) ? res.data : [];
+        setAlbums(list);
+        const matched = list.find((a) => a._id === pin.board);
+        setBoard(matched ? matched._id : "");
+      })
+      .catch(() => {});
+  }, [pin._id, pin.board, pin.user]);
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -57,6 +73,7 @@ function EditPinModal({ pin, onClose, onSaved }) {
         category,
         deviceType,
         tags,
+        board: board || "general",
       });
       onSaved(res.data.data);
       onClose();
@@ -157,6 +174,22 @@ function EditPinModal({ pin, onClose, onSaved }) {
               <option value="both">Both</option>
             </select>
           </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-muted">Album</label>
+          <select
+            value={board}
+            onChange={(e) => setBoard(e.target.value)}
+            className={inputClass}
+          >
+            <option value="">No album (uncategorized)</option>
+            {albums.map((album) => (
+              <option key={album._id} value={album._id}>
+                {album.title}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="space-y-1.5">
