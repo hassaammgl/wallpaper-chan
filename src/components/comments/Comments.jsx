@@ -68,9 +68,7 @@ function Comments({ pinId, albumId }) {
       <CommentForm
         pinId={pinId}
         albumId={albumId}
-        onAdd={(newComment) =>
-          setComments((prev) => [newComment, ...prev])
-        }
+        onAdd={(newComment) => setComments((prev) => [newComment, ...prev])}
       />
     </div>
   );

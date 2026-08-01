@@ -39,7 +39,7 @@ function PinPage() {
       } catch (err) {
         if (!cancelled) {
           setError(
-            err.response?.data?.message || err.message || "Failed to load pin"
+            err.response?.data?.message || err.message || "Failed to load pin",
           );
         }
       } finally {

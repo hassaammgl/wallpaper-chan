@@ -58,7 +58,8 @@ function parseArgs(argv) {
     else if (a === "--no-reset-password") args.resetPassword = false;
     else if (a === "--email") args.email = argv[++i];
     else if (a === "--password") args.password = argv[++i];
-    else if (a === "--username" || a === "--userName") args.username = argv[++i];
+    else if (a === "--username" || a === "--userName")
+      args.username = argv[++i];
     else if (a === "--name" || a === "--displayName") args.name = argv[++i];
     else if (a === "--help" || a === "-h") args.help = true;
     else if (!a.startsWith("-")) positional.push(a);
@@ -98,11 +99,17 @@ if (cli.help) {
 
 const MONGODB_URI = env.MONGODB_URI;
 if (!MONGODB_URI) {
-  console.error("MONGODB_URI is not defined. Set it in .env.local or as an env var.");
+  console.error(
+    "MONGODB_URI is not defined. Set it in .env.local or as an env var.",
+  );
   process.exit(1);
 }
 
-const ADMIN_EMAIL = (cli.email || env.ADMIN_EMAIL || "admin@wallpaper-chan.com").toLowerCase();
+const ADMIN_EMAIL = (
+  cli.email ||
+  env.ADMIN_EMAIL ||
+  "admin@wallpaper-chan.com"
+).toLowerCase();
 const ADMIN_PASSWORD = cli.password || env.ADMIN_PASSWORD || "Admin@12345";
 const ADMIN_USERNAME = cli.username || env.ADMIN_USERNAME || "admin";
 const ADMIN_DISPLAY_NAME = cli.name || env.ADMIN_DISPLAY_NAME || "Admin";
@@ -112,7 +119,12 @@ function authUserId(user) {
   return user._id;
 }
 
-async function upsertCredentialAccount(accounts, userObjectId, password, { force }) {
+async function upsertCredentialAccount(
+  accounts,
+  userObjectId,
+  password,
+  { force },
+) {
   const userIdStr = userObjectId.toHexString();
   const hashed = await hashPassword(password);
 
@@ -153,7 +165,8 @@ async function upsertCredentialAccount(accounts, userObjectId, password, { force
 async function repairAndPromote(users, accounts, existing) {
   const userObjectId = authUserId(existing);
   const legacyStringId =
-    typeof existing.id === "string" && existing.id !== userObjectId.toHexString()
+    typeof existing.id === "string" &&
+    existing.id !== userObjectId.toHexString()
       ? existing.id
       : null;
 
@@ -170,8 +183,10 @@ async function repairAndPromote(users, accounts, existing) {
     updates.displayName = ADMIN_DISPLAY_NAME;
     updates.name = ADMIN_DISPLAY_NAME;
   } else {
-    if (existing.displayName && !existing.name) updates.name = existing.displayName;
-    if (existing.name && !existing.displayName) updates.displayName = existing.name;
+    if (existing.displayName && !existing.name)
+      updates.name = existing.displayName;
+    if (existing.name && !existing.displayName)
+      updates.displayName = existing.name;
   }
 
   // Drop legacy fields that break better-auth
@@ -180,7 +195,7 @@ async function repairAndPromote(users, accounts, existing) {
 
   await users.updateOne(
     { _id: userObjectId },
-    { $set: updates, $unset: unset }
+    { $set: updates, $unset: unset },
   );
 
   if (legacyStringId) {
@@ -196,7 +211,7 @@ async function repairAndPromote(users, accounts, existing) {
       accounts,
       userObjectId,
       ADMIN_PASSWORD,
-      { force: cli.resetPassword }
+      { force: cli.resetPassword },
     );
   }
 
@@ -215,7 +230,9 @@ async function repairAndPromote(users, accounts, existing) {
 async function createAdmin(users, accounts) {
   const usernameTaken = await users.findOne({ userName: ADMIN_USERNAME });
   if (usernameTaken && usernameTaken.email?.toLowerCase() !== ADMIN_EMAIL) {
-    console.error(`Username "${ADMIN_USERNAME}" is already taken by another account.`);
+    console.error(
+      `Username "${ADMIN_USERNAME}" is already taken by another account.`,
+    );
     process.exit(1);
   }
 
@@ -250,7 +267,8 @@ async function createAdmin(users, accounts) {
 
 async function main() {
   const client = new MongoClient(MONGODB_URI, {
-    tls: MONGODB_URI.includes("mongodb+srv") || MONGODB_URI.includes("tls=true"),
+    tls:
+      MONGODB_URI.includes("mongodb+srv") || MONGODB_URI.includes("tls=true"),
     tlsAllowInvalidCertificates: true,
   });
 
@@ -265,13 +283,15 @@ async function main() {
       (await users.findOne({
         email: new RegExp(
           `^${ADMIN_EMAIL.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
-          "i"
+          "i",
         ),
       }));
 
     if (cli.promoteOnly && !existing) {
       console.error(`No user found with email: ${ADMIN_EMAIL}`);
-      console.error("Register first, or run without --promote-only to create an admin.");
+      console.error(
+        "Register first, or run without --promote-only to create an admin.",
+      );
       process.exit(1);
     }
 

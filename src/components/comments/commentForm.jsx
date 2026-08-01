@@ -31,19 +31,19 @@ function CommentForm({ pinId, albumId, onAdd }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex items-center gap-2 rounded-2xl border border-line bg-panel/60 p-2 focus-within:border-accent/30 focus-within:glow-ring"
+      className="flex items-center gap-2 rounded-full border border-line bg-panel/60 p-2 focus-within:border-accent/30 focus-within:glow-ring"
     >
       <input
         type="text"
         placeholder="Add a comment..."
         onChange={(e) => setDesc(e.target.value)}
         value={desc}
-        className="flex-1 bg-transparent px-2 py-2 text-sm text-fog outline-none placeholder:text-muted"
+        className="flex-1 bg-transparent p-2 text-sm text-fog outline-none placeholder:text-muted"
       />
       <button
         type="submit"
         disabled={!desc.trim() || loading}
-        className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-ink transition-all hover:brightness-110 disabled:opacity-30"
+        className="flex size-16 items-center justify-center rounded-xl bg-accent text-ink transition-all hover:brightness-110 disabled:opacity-30"
       >
         <HiPaperAirplane size={16} />
       </button>

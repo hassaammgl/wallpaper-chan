@@ -79,10 +79,14 @@ function DashboardPage() {
           Upload, organize, and moderate your wallpaper library
         </h2>
         <p className="mt-2 max-w-lg text-sm text-muted">
-          Keep everything in one place — wallpapers, albums, users, and comments.
+          Keep everything in one place — wallpapers, albums, users, and
+          comments.
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
-          <Link href="/create" className="btn-primary inline-flex items-center gap-2 px-4 py-2.5 text-sm">
+          <Link
+            href="/create"
+            className="btn-primary inline-flex items-center gap-2 px-4 py-2.5 text-sm"
+          >
             <HiArrowUpTray size={16} />
             Upload wallpaper
           </Link>
@@ -102,10 +106,30 @@ function DashboardPage() {
       </section>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Users" value={totals.users} icon={HiUsers} href="/admin/users" />
-        <StatCard label="Wallpapers" value={totals.pins} icon={HiPhoto} href="/admin/pins" />
-        <StatCard label="Albums" value={totals.boards} icon={HiRectangleStack} href="/admin/albums" />
-        <StatCard label="Comments" value={totals.comments} icon={HiChatBubbleLeftRight} href="/admin/comments" />
+        <StatCard
+          label="Users"
+          value={totals.users}
+          icon={HiUsers}
+          href="/admin/users"
+        />
+        <StatCard
+          label="Wallpapers"
+          value={totals.pins}
+          icon={HiPhoto}
+          href="/admin/pins"
+        />
+        <StatCard
+          label="Albums"
+          value={totals.boards}
+          icon={HiRectangleStack}
+          href="/admin/albums"
+        />
+        <StatCard
+          label="Comments"
+          value={totals.comments}
+          icon={HiChatBubbleLeftRight}
+          href="/admin/comments"
+        />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -118,7 +142,10 @@ function DashboardPage() {
         <section className="rounded-[24px] border border-line bg-panel/50 p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-semibold text-fog">Recent users</h2>
-            <Link href="/admin/users" className="text-xs font-medium text-accent hover:underline">
+            <Link
+              href="/admin/users"
+              className="text-xs font-medium text-accent hover:underline"
+            >
               View all
             </Link>
           </div>
@@ -139,7 +166,9 @@ function DashboardPage() {
                   <p className="truncate text-sm font-medium text-fog">
                     {user.displayName}
                   </p>
-                  <p className="truncate text-xs text-muted">@{user.userName}</p>
+                  <p className="truncate text-xs text-muted">
+                    @{user.userName}
+                  </p>
                 </div>
                 <span
                   className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${
@@ -155,10 +184,13 @@ function DashboardPage() {
           </div>
         </section>
 
-        <section className="rounded-[24px] border border-line bg-panel/50 p-5">
+        <section className="rounded-3xl border border-line bg-panel/50 p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-semibold text-fog">Recent wallpapers</h2>
-            <Link href="/admin/pins" className="text-xs font-medium text-accent hover:underline">
+            <Link
+              href="/admin/pins"
+              className="text-xs font-medium text-accent hover:underline"
+            >
               View all
             </Link>
           </div>
