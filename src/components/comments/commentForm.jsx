@@ -11,7 +11,6 @@ function CommentForm({ pinId, albumId, onAdd }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!desc.trim() || loading) return;
-
     setLoading(true);
     try {
       const body = { description: desc };
