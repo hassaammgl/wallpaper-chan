@@ -1,20 +1,32 @@
 # Agent instructions
 
-This repo uses the **`.ai/`** engineering knowledge base as the source of truth for architecture, coding standards, workflows, and checklists.
+**Source of truth for this whole project: `.ai/`** (not `.cursor`).
 
-Cursor project rules in `.cursor/rules/` enforce that handbook for this stack (Next.js App Router, React, Tailwind, Mongoose, Better Auth).
+Read `.ai/README.md` first. All architecture, coding standards, workflows, checklists, prompts, and conventions live under `.ai/`.
 
 ## Before coding
 
-1. Read `.ai/workflows/before-coding.md`
-2. Read stack-relevant files under `.ai/rules/` (`react.md`, `frontend.md`, `api.md`, `coding.md`, …)
-3. Search and read existing code in the feature area
-4. Plan real file paths — do not invent APIs, env vars, or models
+1. `.ai/workflows/before-coding.md`
+2. `.ai/rules/architecture.md` + `.ai/rules/coding.md` + `.ai/rules/oop.md`
+3. Stack files for this app: `.ai/rules/react.md`, `.ai/rules/frontend.md`, `.ai/rules/api.md`, `.ai/rules/backend.md`, `.ai/rules/database.md`, `.ai/rules/security.md`
+4. Search/read existing code in the feature area — do not invent APIs, env vars, or models
 
-## After coding
+## Hard limits (from `.ai`)
 
-1. Self-review with `.ai/workflows/code-review.md`
-2. Run the matching checklist under `.ai/checklists/`
+| Rule | Limit | File |
+|------|-------|------|
+| Function body | ≤ **30** lines | `.ai/rules/coding.md` |
+| Parameters | ≤ **4** (else options object) | `.ai/rules/coding.md` |
+| Component / page file | ≤ **150** lines | `.ai/rules/react.md` R3 |
+| One responsibility per function | pass/fail | `.ai/rules/coding.md` |
+| Verb-phrase names | not `process` / `helper` alone | `.ai/rules/coding.md` |
+| No unexplained empty `catch` | surface / rethrow / comment | `.ai/rules/coding.md` |
+
+## During / after
+
+- Implement via `.ai/workflows/implementation.md`
+- Self-review via `.ai/workflows/code-review.md`
+- Checklists: `.ai/checklists/` (`frontend`, `api`, `backend`, `security`, …)
 
 ## Project map
 
@@ -23,6 +35,7 @@ Cursor project rules in `.cursor/rules/` enforce that handbook for this stack (N
 | Pages | `src/app/(main)/`, `src/app/admin/` |
 | API | `src/app/api/` |
 | UI | `src/components/` |
+| Hooks | `src/hooks/` |
 | Lib | `src/lib/` |
 | Models | `src/lib/models/` |
-| AI handbook | `.ai/` |
+| **Rules handbook** | **`.ai/`** |

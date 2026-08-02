@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import NextImage from "next/image";
 import { signIn, signUp } from "@/lib/auth-client";
 import useAuthStore from "@/stores/authStore";
+import AuthForm from "@/components/auth/AuthForm";
 import { HiSparkles } from "react-icons/hi2";
 
 function AuthPage() {
@@ -39,7 +39,13 @@ function AuthPage() {
           setError(res.error.message || "Registration failed");
           return;
         }
-        setCurrentUser(res.data?.user || { email: data.email, userName: data.userName, displayName: data.displayName });
+        setCurrentUser(
+          res.data?.user || {
+            email: data.email,
+            userName: data.userName,
+            displayName: data.displayName,
+          },
+        );
       } else {
         const res = await signIn.email({
           email: data.email,
@@ -64,12 +70,8 @@ function AuthPage() {
     }
   };
 
-  const inputClass =
-    "w-full rounded-2xl border border-line bg-canvas/80 px-4 py-3.5 text-fog outline-none transition-all placeholder:text-muted focus:border-accent/50 focus:ring-2 focus:ring-accent/20";
-
   return (
     <div className="mesh-bg flex min-h-screen">
-      {/* Left panel — brand */}
       <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden p-12 lg:flex">
         <div className="absolute inset-0 bg-linear-to-br from-parrot/15 via-transparent to-lime/10" />
         <div className="absolute -left-20 top-1/4 h-72 w-72 rounded-full bg-parrot/15 blur-3xl animate-float" />
@@ -107,191 +109,14 @@ function AuthPage() {
         </p>
       </div>
 
-      {/* Right panel — form */}
       <div className="flex flex-1 items-center justify-center p-6 sm:p-10">
-        <div className="w-full max-w-md animate-fade-up">
-          <div className="mb-8 lg:hidden">
-            <NextImage
-              src="/logo.png"
-              alt="Wallpaper-chan"
-              width={36}
-              height={36}
-              className="mb-4 h-9 w-9 object-contain"
-            />
-            <h1 className="text-2xl font-bold text-gradient">Wallpaper-chan</h1>
-          </div>
-
-          <div className="rounded-[28px] border border-line glass p-8 shadow-2xl shadow-black/30">
-            <div className="mb-8">
-              <h2 className="text-2xl font-semibold text-fog">
-                {isRegister ? "Create your account" : "Welcome back"}
-              </h2>
-              <p className="mt-1.5 text-sm text-muted">
-                {isRegister
-                  ? "Start sharing your wallpapers today"
-                  : "Sign in to continue exploring"}
-              </p>
-            </div>
-
-            {isRegister ? (
-              <form
-                key="register"
-                onSubmit={handleSubmit}
-                className="flex flex-col gap-4"
-              >
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="userName"
-                    className="text-xs font-medium uppercase tracking-wider text-muted"
-                  >
-                    Username
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="yourname"
-                    id="userName"
-                    required
-                    name="userName"
-                    className={inputClass}
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="displayName"
-                    className="text-xs font-medium uppercase tracking-wider text-muted"
-                  >
-                    Display name
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Your Name"
-                    required
-                    name="displayName"
-                    id="displayName"
-                    className={inputClass}
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="email"
-                    className="text-xs font-medium uppercase tracking-wider text-muted"
-                  >
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    placeholder="you@example.com"
-                    required
-                    name="email"
-                    id="email"
-                    className={inputClass}
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="password"
-                    className="text-xs font-medium uppercase tracking-wider text-muted"
-                  >
-                    Password
-                  </label>
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    required
-                    name="password"
-                    id="password"
-                    className={inputClass}
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn-primary mt-2 w-full py-3.5 text-sm"
-                >
-                  {loading ? "Creating account..." : "Create account"}
-                </button>
-                <p className="text-center text-sm text-muted">
-                  Already have an account?{" "}
-                  <button
-                    type="button"
-                    onClick={() => setIsRegister(false)}
-                    className="font-semibold text-accent hover:text-accent-hover"
-                  >
-                    Sign in
-                  </button>
-                </p>
-              </form>
-            ) : (
-              <form
-                key="loginForm"
-                onSubmit={handleSubmit}
-                className="flex flex-col gap-4"
-              >
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="email"
-                    className="text-xs font-medium uppercase tracking-wider text-muted"
-                  >
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    placeholder="you@example.com"
-                    required
-                    name="email"
-                    id="email"
-                    className={inputClass}
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="password"
-                    className="text-xs font-medium uppercase tracking-wider text-muted"
-                  >
-                    Password
-                  </label>
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    required
-                    name="password"
-                    id="password"
-                    className={inputClass}
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn-primary mt-2 w-full py-3.5 text-sm"
-                >
-                  {loading ? "Signing in..." : "Sign in"}
-                </button>
-                <p className="text-center text-sm text-muted">
-                  New here?{" "}
-                  <button
-                    type="button"
-                    onClick={() => setIsRegister(true)}
-                    className="font-semibold text-accent hover:text-accent-hover"
-                  >
-                    Create account
-                  </button>
-                </p>
-              </form>
-            )}
-
-            {error && (
-              <div className="mt-4 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
-                {error}
-              </div>
-            )}
-          </div>
-
-          <p className="mt-6 text-center text-xs text-muted">
-            <Link href="/" className="hover:text-fog transition-colors">
-              Back to explore
-            </Link>
-          </p>
-        </div>
+        <AuthForm
+          isRegister={isRegister}
+          setIsRegister={setIsRegister}
+          loading={loading}
+          error={error}
+          onSubmit={handleSubmit}
+        />
       </div>
     </div>
   );

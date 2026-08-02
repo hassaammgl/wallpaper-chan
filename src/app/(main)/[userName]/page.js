@@ -1,54 +1,13 @@
 "use client";
 
 import { Suspense, useState, useEffect } from "react";
-import { useParams, useSearchParams, useRouter } from "next/navigation";
-import Image from "@/components/Image/Image";
+import { useParams, useSearchParams } from "next/navigation";
 import Gallery from "@/components/gallery/gallery";
 import Albums from "@/components/albums/Albums";
 import { SavedPins, HistoryFeed } from "@/components/albums/SavedHistory";
+import ProfileHeader from "@/components/profile/ProfileHeader";
 import apiRequest from "@/lib/apiRequest";
 import useAuthStore from "@/stores/authStore";
-import ShareButton from "@/components/ShareButton";
-import OptionsMenu from "@/components/OptionsMenu";
-import { shareContent } from "@/lib/share";
-import {
-  HiLink,
-  HiFlag,
-  HiUserPlus,
-  HiPencilSquare,
-} from "react-icons/hi2";
-
-function FollowButton({ isFollowing, userName, onFollowChange }) {
-  const [following, setFollowing] = useState(isFollowing);
-  const [loading, setLoading] = useState(false);
-
-  const handleFollow = async () => {
-    setLoading(true);
-    try {
-      const res = await apiRequest.post(`/api/users/follow/${userName}`);
-      setFollowing(res.data.following);
-      onFollowChange?.();
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <button
-      onClick={handleFollow}
-      disabled={loading}
-      className={`rounded-full px-6 py-2.5 text-sm font-semibold transition-all disabled:opacity-50 ${
-        following
-          ? "border border-line bg-panel text-fog hover:bg-panel-hover"
-          : "btn-primary"
-      }`}
-    >
-      {following ? "Following" : "Follow"}
-    </button>
-  );
-}
 
 const TABS = [
   { key: "created", label: "Created" },
@@ -60,7 +19,6 @@ const TABS = [
 function ProfilePage() {
   const { userName } = useParams();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const { currentUser } = useAuthStore();
   const tabParam = searchParams.get("tab");
   const initialTab = TABS.some((t) => t.key === tabParam) ? tabParam : "created";
@@ -119,102 +77,12 @@ function ProfilePage() {
 
   return (
     <div className="space-y-8 animate-fade-up">
-      <div className="relative overflow-hidden rounded-[28px] border border-line glass p-8 md:p-10">
-        <div className="absolute inset-0 bg-linear-to-br from-parrot/10 via-transparent to-lime/8" />
-
-        <div className="relative flex flex-col items-center gap-5 text-center">
-          <div className="relative">
-            <Image
-              w={112}
-              h={112}
-              path={data.img || "/general/noAvatar.svg"}
-              alt={data.displayName}
-              className="h-28 w-28 rounded-full object-cover ring-4 ring-accent/25 shadow-2xl shadow-accent/15"
-            />
-            <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-2 border-panel bg-parrot" />
-          </div>
-
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-fog md:text-4xl">
-              {data.displayName}
-            </h1>
-            <span className="mt-1 block font-mono text-sm text-muted">
-              @{data.userName}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-6 text-sm">
-            <div className="text-center">
-              <p className="text-xl font-bold text-fog">{data.followerCounts}</p>
-              <p className="text-muted">Followers</p>
-            </div>
-            <div className="h-8 w-px bg-line" />
-            <div className="text-center">
-              <p className="text-xl font-bold text-fog">{data.followingCounts}</p>
-              <p className="text-muted">Following</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {!isOwner && (
-              <FollowButton
-                isFollowing={data.isFollowing}
-                userName={data.userName}
-                onFollowChange={fetchProfile}
-              />
-            )}
-            <ShareButton
-              title={data.displayName || data.userName}
-              text={`Check out @${data.userName} on Wallpaper-chan`}
-              url={`/${data.userName}`}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-line text-muted transition-colors hover:bg-panel-hover hover:text-fog disabled:opacity-50"
-            />
-            <OptionsMenu
-              align="right"
-              buttonClassName="flex h-10 w-10 items-center justify-center rounded-full border border-line text-muted transition-colors hover:bg-panel-hover hover:text-fog"
-              items={[
-                {
-                  label: "Copy profile link",
-                  icon: <HiLink size={16} />,
-                  onClick: async () => {
-                    await shareContent({
-                      title: data.displayName || data.userName,
-                      text: `Check out @${data.userName} on Wallpaper-chan`,
-                      url: `/${data.userName}`,
-                    });
-                  },
-                },
-                !isOwner && {
-                  label: data.isFollowing ? "Following" : "Follow",
-                  icon: <HiUserPlus size={16} />,
-                  onClick: async () => {
-                    if (!currentUser) {
-                      router.push("/auth");
-                      return;
-                    }
-                    try {
-                      await apiRequest.post(`/api/users/follow/${data.userName}`);
-                      fetchProfile();
-                    } catch {
-                      // ignore
-                    }
-                  },
-                },
-                isOwner && {
-                  label: "Edit profile",
-                  icon: <HiPencilSquare size={16} />,
-                  onClick: () => router.push("/settings"),
-                },
-                !isOwner && {
-                  label: "Report user",
-                  icon: <HiFlag size={16} />,
-                  onClick: () => alert("Thanks — report noted"),
-                },
-              ]}
-            />
-          </div>
-        </div>
-      </div>
+      <ProfileHeader
+        data={data}
+        isOwner={isOwner}
+        currentUser={currentUser}
+        onRefresh={fetchProfile}
+      />
 
       <div className="flex flex-wrap gap-1 rounded-2xl border border-line bg-panel/50 p-1 w-fit">
         {visibleTabs.map((tab) => (
@@ -233,9 +101,7 @@ function ProfilePage() {
       </div>
 
       {type === "created" && <Gallery userId={data._id} />}
-      {type === "albums" && (
-        <Albums userId={data._id} isOwner={isOwner} />
-      )}
+      {type === "albums" && <Albums userId={data._id} isOwner={isOwner} />}
       {type === "saved" && isOwner && <SavedPins userId={data._id} />}
       {type === "history" && isOwner && <HistoryFeed userId={data._id} />}
     </div>

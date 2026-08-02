@@ -3,19 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import apiRequest from "@/lib/apiRequest";
-import ShareButton from "@/components/ShareButton";
-import OptionsMenu from "@/components/OptionsMenu";
 import useAuthStore from "@/stores/authStore";
 import { shareContent } from "@/lib/share";
-import {
-  HiHeart,
-  HiLink,
-  HiArrowDownTray,
-  HiBookmark,
-  HiPencilSquare,
-  HiTrash,
-  HiFlag,
-} from "react-icons/hi2";
+import PostActionBar from "@/components/postInteractions/PostActionBar";
 
 function PostInteractions({ postId, title }) {
   const router = useRouter();
@@ -77,7 +67,9 @@ function PostInteractions({ postId, title }) {
   const handleCopyLink = async () => {
     const result = await shareContent({
       title,
-      text: title ? `Check out this wallpaper: ${title}` : "Check out this wallpaper",
+      text: title
+        ? `Check out this wallpaper: ${title}`
+        : "Check out this wallpaper",
       url: `/pins/${postId}`,
     });
     if (result.method === "clipboard" || result.method === "prompt") {
@@ -107,85 +99,23 @@ function PostInteractions({ postId, title }) {
 
   if (loading) return null;
 
-  const isAdmin = currentUser?.role === "admin";
-
   return (
     <div className="relative flex flex-col gap-2">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
-          <button
-            type="button"
-            onClick={() => handleInteract("like")}
-            className={`flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-all ${
-              data.isLiked
-                ? "bg-parrot/15 text-parrot"
-                : "text-muted hover:bg-panel-hover hover:text-fog"
-            }`}
-          >
-            <HiHeart size={20} className={data.isLiked ? "fill-current" : ""} />
-            {data.likeCount}
-          </button>
-          <ShareButton
-            title={title}
-            text={
-              title
-                ? `Check out this wallpaper: ${title}`
-                : "Check out this wallpaper"
-            }
-            url={`/pins/${postId}`}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-panel-hover hover:text-fog disabled:opacity-50"
-          />
-          <OptionsMenu
-            align="left"
-            buttonClassName="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-panel-hover hover:text-fog"
-            items={[
-              {
-                label: "Copy link",
-                icon: <HiLink size={16} />,
-                onClick: handleCopyLink,
-              },
-              {
-                label: "Download",
-                icon: <HiArrowDownTray size={16} />,
-                onClick: handleDownload,
-              },
-              {
-                label: data.isSaved ? "Unsave" : "Save",
-                icon: <HiBookmark size={16} />,
-                onClick: () => handleInteract("save"),
-              },
-              isAdmin && {
-                label: "Edit in admin",
-                icon: <HiPencilSquare size={16} />,
-                onClick: () => router.push("/admin/pins"),
-              },
-              isAdmin && {
-                label: "Delete wallpaper",
-                icon: <HiTrash size={16} />,
-                danger: true,
-                onClick: handleDelete,
-              },
-              !isAdmin && {
-                label: "Report",
-                icon: <HiFlag size={16} />,
-                onClick: () => showToast("Thanks — report noted"),
-              },
-            ]}
-          />
-        </div>
-
-        <button
-          type="button"
-          onClick={() => handleInteract("save")}
-          className={`shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold transition-all disabled:opacity-50 ${
-            data.isSaved
-              ? "border border-accent/40 bg-accent-soft text-accent"
-              : "btn-primary"
-          }`}
-        >
-          {data.isSaved ? "Saved" : "Save"}
-        </button>
-      </div>
+      <PostActionBar
+        title={title}
+        postId={postId}
+        likeCount={data.likeCount}
+        isLiked={data.isLiked}
+        isSaved={data.isSaved}
+        isAdmin={currentUser?.role === "admin"}
+        onLike={() => handleInteract("like")}
+        onSave={() => handleInteract("save")}
+        onCopyLink={handleCopyLink}
+        onDownload={handleDownload}
+        onEditAdmin={() => router.push("/admin/pins")}
+        onDelete={handleDelete}
+        onReport={() => showToast("Thanks — report noted")}
+      />
 
       {toast && (
         <div className="rounded-xl border border-line bg-panel/80 px-3 py-1.5 text-xs text-fog">

@@ -3,10 +3,11 @@ export const dynamic = "force-dynamic";
 import connectDB from "@/lib/db";
 import { requireAdmin } from "@/lib/requireAdmin";
 import Pin from "@/lib/models/pin.model";
-import Comment from "@/lib/models/comment.model";
-import Like from "@/lib/models/like.model";
-import Save from "@/lib/models/save.model";
 import { enrichWithUsers } from "@/lib/users";
+import {
+  applyAdminPinUpdates,
+  deletePinCascade,
+} from "@/lib/adminPinActions";
 
 export async function GET(_request, { params }) {
   try {
@@ -54,60 +55,12 @@ export async function PATCH(request, { params }) {
     }
 
     const body = await request.json();
-    const allowed = [
-      "title",
-      "description",
-      "prompt",
-      "link",
-      "board",
-      "tags",
-      "deviceType",
-      "category",
-      "resolution",
-    ];
-
-    for (const key of allowed) {
-      if (body[key] === undefined) continue;
-
-      if (key === "title" || key === "description") {
-        const value = String(body[key] || "").trim();
-        if (!value) {
-          return Response.json(
-            { success: false, message: `${key} is required` },
-            { status: 400 }
-          );
-        }
-        pin[key] = value;
-        continue;
-      }
-
-      if (key === "tags") {
-        pin.tags = Array.isArray(body.tags)
-          ? body.tags.map((t) => String(t).trim()).filter(Boolean)
-          : String(body.tags || "")
-              .split(",")
-              .map((t) => t.trim())
-              .filter(Boolean);
-        continue;
-      }
-
-      if (key === "deviceType") {
-        if (!["mobile", "desktop", "both"].includes(body.deviceType)) {
-          return Response.json(
-            { success: false, message: "Invalid device type" },
-            { status: 400 }
-          );
-        }
-        pin.deviceType = body.deviceType;
-        continue;
-      }
-
-      if (key === "prompt" || key === "link") {
-        pin[key] = body[key] ? String(body[key]).trim() : null;
-        continue;
-      }
-
-      pin[key] = body[key];
+    const validationError = applyAdminPinUpdates(pin, body);
+    if (validationError) {
+      return Response.json(
+        { success: false, message: validationError.message },
+        { status: validationError.status }
+      );
     }
 
     await pin.save();
@@ -145,10 +98,7 @@ export async function DELETE(_request, { params }) {
       );
     }
 
-    await Pin.deleteOne({ _id: id });
-    await Comment.deleteMany({ pin: id });
-    await Like.deleteMany({ pin: id });
-    await Save.deleteMany({ pin: id });
+    await deletePinCascade(id);
 
     return Response.json({ success: true, message: "Pin deleted" });
   } catch (error) {

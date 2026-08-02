@@ -80,3 +80,34 @@ export function buildPinPublishBody(options) {
     canvasOptions: JSON.stringify(canvasOptions),
   };
 }
+
+export async function publishCreatedPin({
+  file,
+  uploadedMedia,
+  onProgress,
+  collectDraftPayload,
+  apiRequest,
+  form,
+  draftId,
+}) {
+  const mediaData = await ensureUploadedMedia({
+    file,
+    uploadedMedia,
+    onProgress,
+    collectDraftPayload,
+    apiRequest,
+  });
+
+  const res = await apiRequest.post(
+    "/api/pins",
+    buildPinPublishBody({ ...form, mediaData })
+  );
+
+  if (draftId) {
+    await apiRequest.delete(`/api/drafts/${draftId}`).catch(() => {
+      // non-fatal: draft cleanup after publish
+    });
+  }
+
+  return { mediaData, pin: res.data };
+}
