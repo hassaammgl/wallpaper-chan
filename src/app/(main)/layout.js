@@ -5,6 +5,24 @@ import LeftBar from "@/components/leftBar/leftBar";
 import TopBar from "@/components/topBar/topBar";
 import { useSession } from "@/lib/auth-client";
 import useAuthStore from "@/stores/authStore";
+import { resolveMediaSrc } from "@/lib/mediaUrls";
+
+function normalizeSessionUser(user) {
+  if (!user) return null;
+  const img = user.img
+    ? resolveMediaSrc(user.img, { width: 160 }) ||
+      (user.img.startsWith("http") || user.img.startsWith("/general/")
+        ? user.img
+        : null)
+    : null;
+  return {
+    ...user,
+    id: user.id || user._id,
+    _id: user.id || user._id,
+    displayName: user.displayName || user.name,
+    img,
+  };
+}
 
 function MainLayout({ children }) {
   const { data: session, isPending } = useSession();
@@ -18,7 +36,7 @@ function MainLayout({ children }) {
         removeCurrentUser();
         return;
       }
-      setCurrentUser(session.user);
+      setCurrentUser(normalizeSessionUser(session.user));
       return;
     }
 

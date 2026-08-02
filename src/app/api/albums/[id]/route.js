@@ -6,6 +6,7 @@ import Pin from "@/lib/models/pin.model";
 import Comment from "@/lib/models/comment.model";
 import { getSession } from "@/lib/getSession";
 import { enrichWithUsers, findUserById } from "@/lib/users";
+import { getAccessibleAlbum, albumPinQuery } from "@/lib/albumAccess";
 
 export async function GET(request, { params }) {
   try {
@@ -13,31 +14,19 @@ export async function GET(request, { params }) {
     const { id } = await params;
     const session = await getSession();
 
-    const album = await Board.findById(id);
+    const { album, status, message } = await getAccessibleAlbum(id);
     if (!album) {
-      return Response.json(
-        { success: false, message: "Album not found" },
-        { status: 404 }
-      );
+      return Response.json({ success: false, message }, { status });
     }
 
     const isOwner = session?.user?.id === album.user;
-    if (!album.isPublic && !isOwner) {
-      return Response.json(
-        { success: false, message: "Album is private" },
-        { status: 403 }
-      );
-    }
-
-    const boardId = album._id.toString();
-    const pins = await Pin.find({
-      $or: [{ board: boardId }, { board: album.title }],
-      user: album.user,
-    }).sort({ createdAt: -1 });
-
+    const isAdmin = session?.user?.role === "admin";
+    const pins = await Pin.find(albumPinQuery(album)).sort({ createdAt: -1 });
     const pinsWithUsers = await enrichWithUsers(pins);
     const owner = await findUserById(album.user);
-    const commentCount = await Comment.countDocuments({ album: boardId });
+    const commentCount = await Comment.countDocuments({
+      album: album._id.toString(),
+    });
 
     return Response.json({
       ...album.toObject(),
@@ -45,7 +34,7 @@ export async function GET(request, { params }) {
       pins: pinsWithUsers,
       pinCount: pinsWithUsers.length,
       commentCount,
-      isOwner,
+      isOwner: isOwner || isAdmin,
     });
   } catch (error) {
     return Response.json(

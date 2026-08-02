@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic";
 
 import connectDB from "@/lib/db";
-import { getSession } from "@/lib/getSession";
 import Pin from "@/lib/models/pin.model";
 import Comment from "@/lib/models/comment.model";
 import Board from "@/lib/models/board.model";
@@ -9,16 +8,13 @@ import Like from "@/lib/models/like.model";
 import Follow from "@/lib/models/follow.model";
 import Save from "@/lib/models/save.model";
 import { countUsers, enrichWithUsers, listUsers } from "@/lib/users";
+import { requireAdmin } from "@/lib/requireAdmin";
+import { handleApiError, AppError } from "@/lib/AppError";
 
 export async function GET() {
   try {
-    const session = await getSession();
-    if (!session || session.user.role !== "admin") {
-      return Response.json(
-        { success: false, message: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    const { error } = await requireAdmin();
+    if (error) return error;
 
     await connectDB();
 
@@ -34,7 +30,6 @@ export async function GET() {
       ]);
 
     const recentPins = await Pin.find().sort({ createdAt: -1 }).limit(5);
-    const recentPinsWithUsers = await enrichWithUsers(recentPins);
 
     return Response.json({
       success: true,
@@ -49,13 +44,10 @@ export async function GET() {
           saves,
         },
         recentUsers: usersRes.users,
-        recentPins: recentPinsWithUsers,
+        recentPins: await enrichWithUsers(recentPins),
       },
     });
   } catch (error) {
-    return Response.json(
-      { success: false, message: "Failed to fetch stats" },
-      { status: 500 }
-    );
+    return handleApiError(new AppError("Failed to fetch stats", 500));
   }
 }

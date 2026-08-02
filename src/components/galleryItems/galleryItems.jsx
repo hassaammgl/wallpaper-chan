@@ -2,17 +2,21 @@
 
 import Link from "next/link";
 import Image from "@/components/Image/Image";
+import { GALLERY_THUMB_WIDTH, DEFAULT_PIN_WIDTH } from "@/lib/constants";
 
 function GalleryItem({ item }) {
-  const pinHeight = Number(item.height) || 1200;
-  const pinWidth = Number(item.width) || 800;
-  const aspect = Math.min(1.85, Math.max(0.55, pinHeight / pinWidth));
+  const pinWidth = Math.max(1, Number(item.width) || DEFAULT_PIN_WIDTH);
+  const pinHeight = Math.max(
+    1,
+    Number(item.height) || Math.round(pinWidth * 1.25)
+  );
+  const ratio = Math.min(1.7, Math.max(0.65, pinHeight / pinWidth));
 
   return (
     <Link
       href={`/pins/${item._id}`}
       className="group block overflow-hidden rounded-2xl bg-panel ring-1 ring-line transition-all hover:ring-accent/35 hover:shadow-lg hover:shadow-black/20"
-      style={{ aspectRatio: `${pinWidth} / ${Math.round(pinWidth * aspect)}` }}
+      style={{ aspectRatio: `1 / ${ratio.toFixed(3)}` }}
       aria-label={item.title || "Open wallpaper"}
     >
       <div className="relative h-full w-full">
@@ -21,7 +25,7 @@ function GalleryItem({ item }) {
           pin={item}
           uploadProvider={item.uploadProvider}
           mode="display"
-          w={480}
+          w={GALLERY_THUMB_WIDTH}
           alt={item.title || "Wallpaper"}
           fill
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"

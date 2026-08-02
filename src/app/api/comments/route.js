@@ -4,6 +4,7 @@ import connectDB from "@/lib/db";
 import Comment from "@/lib/models/comment.model";
 import { getSession } from "@/lib/getSession";
 import { enrichWithUsers } from "@/lib/users";
+import { getAccessibleAlbum } from "@/lib/albumAccess";
 
 export async function GET(request) {
   try {
@@ -17,6 +18,13 @@ export async function GET(request) {
         { success: false, message: "pinId or albumId is required" },
         { status: 400 }
       );
+    }
+
+    if (albumId) {
+      const { album, status, message } = await getAccessibleAlbum(albumId);
+      if (!album) {
+        return Response.json({ success: false, message }, { status });
+      }
     }
 
     const query = pinId ? { pin: pinId } : { album: albumId };
@@ -57,6 +65,16 @@ export async function POST(request) {
         { success: false, message: "pin or album is required" },
         { status: 400 }
       );
+    }
+
+    if (album) {
+      const access = await getAccessibleAlbum(album);
+      if (!access.album) {
+        return Response.json(
+          { success: false, message: access.message },
+          { status: access.status }
+        );
+      }
     }
 
     const comment = await Comment.create({

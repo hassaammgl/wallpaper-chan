@@ -1,101 +1,100 @@
 export const dynamic = "force-dynamic";
 
-import mongoose from "mongoose";
 import connectDB from "@/lib/db";
 import Pin from "@/lib/models/pin.model";
-import Board from "@/lib/models/board.model";
-import { getSession } from "@/lib/getSession";
-import { enrichWithUsers, getBlockedUserIds } from "@/lib/users";
+import { enrichWithUsers } from "@/lib/users";
+import { requireAdmin } from "@/lib/requireAdmin";
+import { handleApiError, AppError } from "@/lib/AppError";
+import { PINS_PAGE_SIZE } from "@/lib/constants";
+import {
+  buildPinSearchClause,
+  applyAlbumFilter,
+  applyUserVisibilityFilter,
+  normalizePinTags,
+  validatePinCreateBody,
+} from "@/lib/pinQuery";
 
 export async function GET(request) {
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
-    const cursor = searchParams.get("cursor") || 0;
+    const cursor = Number(searchParams.get("cursor") || 0);
     const search = searchParams.get("search");
     const userId = searchParams.get("userId");
     const boardId = searchParams.get("boardId");
     const deviceType = searchParams.get("deviceType");
-    const limit = 20;
 
     const query = {};
-    if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { tags: { $in: [new RegExp(search, "i")] } },
-        { category: { $regex: search, $options: "i" } },
-      ];
+    const searchClause = buildPinSearchClause(search);
+    if (searchClause) Object.assign(query, searchClause);
+
+    const albumDenied = await applyAlbumFilter(query, boardId);
+    if (albumDenied) {
+      return Response.json(
+        {
+          success: false,
+          message: albumDenied.message,
+          pins: [],
+          nextCursor: null,
+        },
+        { status: albumDenied.status }
+      );
     }
-    if (boardId) {
-      if (mongoose.isValidObjectId(boardId)) {
-        const board = await Board.findById(boardId);
-        if (board) {
-          query.$or = [{ board: boardId }, { board: board.title }];
-        } else {
-          query.board = boardId;
-        }
-      } else {
-        query.board = boardId;
-      }
-    }
+
     if (deviceType) {
       query.deviceType = { $in: [deviceType, "both"] };
     }
 
-    try {
-      const blockedIds = await getBlockedUserIds();
-      if (userId) {
-        if (blockedIds.includes(userId)) {
-          return Response.json({ pins: [], nextCursor: null });
-        }
-        query.user = userId;
-      } else if (blockedIds.length > 0) {
-        query.user = { $nin: blockedIds };
-      }
-    } catch {
-      if (userId) query.user = userId;
+    const visibility = await applyUserVisibilityFilter(query, {
+      userId,
+      boardId,
+    });
+    if (visibility?.empty) {
+      return Response.json({ pins: [], nextCursor: null });
     }
 
     const pins = await Pin.find(query)
       .sort({ createdAt: -1 })
-      .skip(Number(cursor))
-      .limit(limit + 1);
+      .skip(cursor)
+      .limit(PINS_PAGE_SIZE + 1);
 
-    const hasMore = pins.length > limit;
-    const result = hasMore ? pins.slice(0, limit) : pins;
-    const pinsWithUsers = await enrichWithUsers(result);
+    const hasMore = pins.length > PINS_PAGE_SIZE;
+    const page = hasMore ? pins.slice(0, PINS_PAGE_SIZE) : pins;
 
     return Response.json({
-      pins: pinsWithUsers,
-      nextCursor: hasMore ? Number(cursor) + limit : null,
+      pins: await enrichWithUsers(page),
+      nextCursor: hasMore ? cursor + PINS_PAGE_SIZE : null,
     });
   } catch (error) {
-    return Response.json(
-      { success: false, message: "Failed to fetch pins" },
-      { status: 500 }
+    return handleApiError(
+      error instanceof AppError
+        ? error
+        : new AppError("Failed to fetch pins", 500)
     );
   }
 }
 
 export async function POST(request) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return Response.json(
-        { success: false, message: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
-    if (session.user.role !== "admin") {
-      return Response.json(
-        { success: false, message: "Only admins can upload wallpapers" },
-        { status: 403 }
-      );
+    const { session, error } = await requireAdmin();
+    if (error) {
+      // Upload is admin-only; keep a clearer message than generic admin gate
+      if (error.status === 403) {
+        return Response.json(
+          { success: false, message: "Only admins can upload wallpapers" },
+          { status: 403 }
+        );
+      }
+      return error;
     }
 
     await connectDB();
     const body = await request.json();
+    const validated = validatePinCreateBody(body);
+    if (validated.error) {
+      throw new AppError(validated.error, 400);
+    }
+
     const {
       title,
       description,
@@ -107,52 +106,19 @@ export async function POST(request) {
       originalMedia,
       originalUrl,
       uploadProvider,
-      width,
-      height,
       resolution,
       deviceType,
       category,
     } = body;
 
-    if (!title?.trim() || !description?.trim()) {
-      return Response.json(
-        { success: false, message: "Title and description are required" },
-        { status: 400 }
-      );
-    }
-
-    if (!media && !originalMedia) {
-      return Response.json(
-        { success: false, message: "Image upload is required" },
-        { status: 400 }
-      );
-    }
-
-    const pinWidth = Number(width);
-    const pinHeight = Number(height);
-    if (!Number.isFinite(pinWidth) || !Number.isFinite(pinHeight)) {
-      return Response.json(
-        { success: false, message: "Image dimensions are required" },
-        { status: 400 }
-      );
-    }
-
-    const tagsArray = tags
-      ? typeof tags === "string"
-        ? tags
-            .split(",")
-            .map((t) => t.trim())
-            .filter(Boolean)
-        : tags
-      : [];
-
+    const { pinWidth, pinHeight } = validated;
     const pin = await Pin.create({
       title: title.trim(),
       description: description.trim(),
       prompt: prompt || null,
       link: link || null,
       board: board || "general",
-      tags: tagsArray,
+      tags: normalizePinTags(tags),
       media: media || originalMedia,
       originalMedia: originalMedia || media,
       originalUrl: originalUrl || null,
@@ -167,13 +133,16 @@ export async function POST(request) {
 
     return Response.json(pin, { status: 201 });
   } catch (error) {
-    console.error("Failed to create pin:", error);
-    const message =
-      error?.name === "ValidationError"
-        ? Object.values(error.errors)
-            .map((e) => e.message)
-            .join("; ")
-        : error?.message || "Failed to create pin";
-    return Response.json({ success: false, message }, { status: 500 });
+    if (error?.name === "ValidationError") {
+      const message = Object.values(error.errors)
+        .map((e) => e.message)
+        .join("; ");
+      return handleApiError(new AppError(message, 500));
+    }
+    return handleApiError(
+      error instanceof AppError
+        ? error
+        : new AppError(error?.message || "Failed to create pin", 500)
+    );
   }
 }

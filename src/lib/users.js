@@ -19,9 +19,15 @@ function userIdQuery(id) {
 export function normalizeUser(doc) {
   if (!doc) return null;
   const id = doc.id || doc._id?.toString();
-  const img = doc.img
-    ? resolveMediaSrc(doc.img, { width: 160 }) || doc.img
+  const resolvedImg = doc.img
+    ? resolveMediaSrc(doc.img, { width: 160 })
     : null;
+  // Never leave /avatars or /wallpapers as site-relative paths for clients
+  const img =
+    resolvedImg ||
+    (doc.img && (doc.img.startsWith("http") || doc.img.startsWith("/general/"))
+      ? doc.img
+      : null);
   return {
     id,
     _id: id,

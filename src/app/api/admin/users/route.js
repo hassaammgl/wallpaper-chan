@@ -1,21 +1,18 @@
 export const dynamic = "force-dynamic";
 
-import { getSession } from "@/lib/getSession";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { listUsers } from "@/lib/users";
+import { handleApiError, AppError } from "@/lib/AppError";
+import { ADMIN_USERS_PAGE_SIZE } from "@/lib/constants";
 
 export async function GET(request) {
   try {
-    const session = await getSession();
-    if (!session || session.user.role !== "admin") {
-      return Response.json(
-        { success: false, message: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    const { error } = await requireAdmin();
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const page = Number(searchParams.get("page") || 1);
-    const limit = Number(searchParams.get("limit") || 15);
+    const limit = Number(searchParams.get("limit") || ADMIN_USERS_PAGE_SIZE);
     const search = searchParams.get("search");
 
     const { users, total } = await listUsers({
@@ -24,16 +21,11 @@ export async function GET(request) {
       offset: (page - 1) * limit,
     });
 
-    const pages = Math.ceil(total / limit);
-
     return Response.json({
       success: true,
-      data: { users, pages, total },
+      data: { users, pages: Math.ceil(total / limit), total },
     });
   } catch (error) {
-    return Response.json(
-      { success: false, message: "Failed to fetch users" },
-      { status: 500 }
-    );
+    return handleApiError(new AppError("Failed to fetch users", 500));
   }
 }

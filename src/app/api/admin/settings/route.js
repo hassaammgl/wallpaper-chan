@@ -1,18 +1,14 @@
 export const dynamic = "force-dynamic";
 
 import connectDB from "@/lib/db";
-import { getSession } from "@/lib/getSession";
 import SiteSettings from "@/lib/models/siteSettings.model";
+import { requireAdmin } from "@/lib/requireAdmin";
+import { handleApiError, AppError } from "@/lib/AppError";
 
 export async function GET() {
   try {
-    const session = await getSession();
-    if (!session || session.user.role !== "admin") {
-      return Response.json(
-        { success: false, message: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    const { error } = await requireAdmin();
+    if (error) return error;
 
     await connectDB();
     let settings = await SiteSettings.findOne();
@@ -25,22 +21,14 @@ export async function GET() {
       data: { uploadProvider: settings.uploadProvider },
     });
   } catch (error) {
-    return Response.json(
-      { success: false, message: "Failed to fetch settings" },
-      { status: 500 }
-    );
+    return handleApiError(new AppError("Failed to fetch settings", 500));
   }
 }
 
 export async function PATCH(request) {
   try {
-    const session = await getSession();
-    if (!session || session.user.role !== "admin") {
-      return Response.json(
-        { success: false, message: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    const { error } = await requireAdmin();
+    if (error) return error;
 
     await connectDB();
     const { uploadProvider } = await request.json();
@@ -58,9 +46,6 @@ export async function PATCH(request) {
       data: { uploadProvider: settings.uploadProvider },
     });
   } catch (error) {
-    return Response.json(
-      { success: false, message: "Failed to update settings" },
-      { status: 500 }
-    );
+    return handleApiError(new AppError("Failed to update settings", 500));
   }
 }

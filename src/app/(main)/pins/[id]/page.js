@@ -35,7 +35,9 @@ function PinPage() {
         const res = await apiRequest.get(`/api/pins/${id}`);
         if (cancelled) return;
         setData(res.data);
-        apiRequest.post("/api/history", { pinId: id }).catch(() => {});
+        apiRequest.post("/api/history", { pinId: id }).catch(() => {
+          // non-fatal: view history is best-effort
+        });
       } catch (err) {
         if (!cancelled) {
           setError(

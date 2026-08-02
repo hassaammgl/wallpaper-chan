@@ -1,0 +1,44 @@
+---
+description: API route, auth, and data rules for Next.js handlers
+globs: src/app/api/**/*.js,src/lib/models/**/*.js,src/lib/**/*.js
+alwaysApply: false
+---
+
+# API / Backend
+
+Full rules: `.ai/rules/api.md`, `.ai/rules/backend.md`, `.ai/rules/database.md`, `.ai/rules/security.md`
+
+## Route handlers
+
+```js
+export const dynamic = "force-dynamic";
+// connectDB() when using Mongoose
+// getSession() for auth — return 401 when required
+// Response.json(data) or { success: false, message }, status
+```
+
+- Match existing response shapes in neighboring routes
+- Do not return `200` with an error body for failures
+- Validate input; use `400` for bad client data, `403` for forbidden, `404` for missing
+
+## Auth & users
+
+- Sessions: `getSession` from `@/lib/getSession`
+- Users live in Better Auth MongoDB — use `@/lib/users.js` (`findUserById`, `enrichWithUsers`, etc.)
+- Do not invent a Mongoose User model or call non-existent Better Auth admin APIs
+
+## Models
+
+- Pin/Board/Comment user refs are **strings** (auth user ids), not ObjectId user refs
+- Pin `board` stores album/board id string (or legacy title) — keep both filters when querying albums
+- Prefer extending existing models over parallel schemas
+
+## Security
+
+- Never trust client for role/ownership — check session server-side
+- No secrets in `NEXT_PUBLIC_*` beyond intended public keys
+- Blocked users: follow existing `getBlockedUserIds` / session blocked patterns
+
+## Checklist before done
+
+See `.ai/checklists/api-checklist.md` and `.ai/checklists/backend-checklist.md`

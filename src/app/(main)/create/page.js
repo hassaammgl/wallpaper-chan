@@ -8,7 +8,12 @@ import useEditStore from "@/stores/editorStore";
 import Editor from "@/components/editor/editor";
 import Image from "@/components/Image/Image";
 import apiRequest from "@/lib/apiRequest";
-import { uploadWallpaper } from "@/lib/uploadWallpaper";
+import { resolveMediaSrc } from "@/lib/mediaUrls";
+import {
+  validateCreateForm,
+  ensureUploadedMedia,
+  buildPinPublishBody,
+} from "@/lib/createPinActions";
 import {
   HiPencilSquare,
   HiArrowUpTray,
@@ -113,15 +118,19 @@ function CreatePageContent() {
     apiRequest
       .get("/api/upload/config")
       .then((res) => setUploadProvider(res.data.data.provider))
-      .catch(() => {});
+      .catch(() => {
+        // non-fatal: upload provider defaults to imagekit
+      });
   }, []);
 
   useEffect(() => {
     if (!currentUser?.id) return;
     apiRequest
       .get(`/api/boards/${currentUser.id}`)
-      .then((res) => setAlbums(res.data))
-      .catch(() => {});
+      .then((res) => setAlbums(Array.isArray(res.data) ? res.data : []))
+      .catch(() => {
+        // non-fatal: album picker stays empty
+      });
   }, [currentUser?.id]);
 
   const loadDrafts = useCallback(async () => {
@@ -179,8 +188,17 @@ function CreatePageContent() {
         name: draft.fileName || null,
       };
       setUploadedMedia(mediaData);
+      const previewUrl =
+        resolveMediaSrc(draft.media, {
+          provider: mediaData.provider,
+          width: 900,
+          originalUrl: draft.originalUrl,
+          originalMedia: draft.originalMedia || draft.media,
+        }) ||
+        draft.originalUrl ||
+        "";
       setPreviewImg({
-        url: draft.originalUrl || draft.media,
+        url: previewUrl,
         width: draft.width || 800,
         height: draft.height || 0,
       });
@@ -345,19 +363,20 @@ function CreatePageContent() {
     }
   };
 
-  const handleSubmit = async () => {
+  const publishWallpaper = async () => {
     if (isEditing) {
       setIsEditing(false);
       return;
     }
 
-    if (!file && !uploadedMedia) {
-      setError("Please select an image first");
-      return;
-    }
-
-    if (!title.trim() || !description.trim()) {
-      setError("Title and description are required");
+    const validated = validateCreateForm({
+      file,
+      uploadedMedia,
+      title,
+      description,
+    });
+    if (validated.error) {
+      setError(validated.error);
       return;
     }
 
@@ -367,58 +386,37 @@ function CreatePageContent() {
     setUploadProgress(0);
 
     try {
-      let mediaData = uploadedMedia;
-      if (!mediaData) {
-        mediaData = await uploadWallpaper(file, {
-          onProgress: setUploadProgress,
-        });
-        setUploadedMedia(mediaData);
-        // Persist draft with CDN media so a later publish failure doesn't lose the upload
-        await apiRequest.post("/api/drafts", {
-          ...collectDraftPayload(),
-          media: mediaData.filePath,
-          originalMedia: mediaData.originalMedia,
-          originalUrl: mediaData.originalUrl,
-          uploadProvider: mediaData.provider,
-          width: mediaData.width,
-          height: mediaData.height,
-          resolution: `${mediaData.width}x${mediaData.height}`,
-          fileName: file?.name || mediaData.name,
-        });
-      }
-
-      const allTags = [
-        ...new Set([
-          ...selectedTags,
-          ...customTags
-            .split(",")
-            .map((t) => t.trim())
-            .filter(Boolean),
-        ]),
-      ];
-
-      const res = await apiRequest.post("/api/pins", {
-        title: title.trim(),
-        description: description.trim(),
-        prompt: prompt || null,
-        link: link || null,
-        board: selectedAlbum || null,
-        tags: allTags.join(","),
-        media: mediaData.filePath,
-        originalMedia: mediaData.originalMedia,
-        originalUrl: mediaData.originalUrl,
-        uploadProvider: mediaData.provider,
-        width: mediaData.width,
-        height: mediaData.height,
-        resolution: `${mediaData.width}x${mediaData.height}`,
-        deviceType,
-        category: category || "general",
-        textOptions: JSON.stringify(textOptions),
-        canvasOptions: JSON.stringify(canvasOptions),
+      const mediaData = await ensureUploadedMedia({
+        file,
+        uploadedMedia,
+        onProgress: setUploadProgress,
+        collectDraftPayload,
+        apiRequest,
       });
+      setUploadedMedia(mediaData);
+
+      const res = await apiRequest.post(
+        "/api/pins",
+        buildPinPublishBody({
+          title,
+          description,
+          prompt,
+          link,
+          selectedAlbum,
+          selectedTags,
+          customTags,
+          mediaData,
+          deviceType,
+          category,
+          textOptions,
+          canvasOptions,
+        })
+      );
 
       if (draftId) {
-        await apiRequest.delete(`/api/drafts/${draftId}`).catch(() => {});
+        await apiRequest.delete(`/api/drafts/${draftId}`).catch(() => {
+          // non-fatal: draft cleanup after publish
+        });
       }
 
       router.push(`/pins/${res.data._id}`);
@@ -469,7 +467,7 @@ function CreatePageContent() {
           </button>
           {(file || uploadedMedia) && (
             <button
-              onClick={handleSubmit}
+              onClick={publishWallpaper}
               disabled={uploading}
               className="btn-primary px-6 py-2.5 text-sm disabled:opacity-60"
             >
@@ -649,7 +647,7 @@ function CreatePageContent() {
             className="space-y-4 rounded-[28px] border border-line glass p-6"
             onSubmit={(e) => {
               e.preventDefault();
-              handleSubmit();
+              publishWallpaper();
             }}
           >
             <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-accent">

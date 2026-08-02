@@ -1,38 +1,35 @@
 export const dynamic = "force-dynamic";
 
 import connectDB from "@/lib/db";
-import { getSession } from "@/lib/getSession";
 import Pin from "@/lib/models/pin.model";
-import { enrichWithUsers, getBlockedUserIds, listUsers } from "@/lib/users";
+import { enrichWithUsers, getBlockedUserIds } from "@/lib/users";
+import { requireAdmin } from "@/lib/requireAdmin";
+import { handleApiError, AppError } from "@/lib/AppError";
+import { ADMIN_PINS_PAGE_SIZE } from "@/lib/constants";
+
+function buildAdminPinSearch(search) {
+  if (!search) return {};
+  return {
+    $or: [
+      { title: { $regex: search, $options: "i" } },
+      { description: { $regex: search, $options: "i" } },
+      { tags: { $in: [new RegExp(search, "i")] } },
+    ],
+  };
+}
 
 export async function GET(request) {
   try {
-    const session = await getSession();
-    if (!session || session.user.role !== "admin") {
-      return Response.json(
-        { success: false, message: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    const { error } = await requireAdmin();
+    if (error) return error;
 
     await connectDB();
     const { searchParams } = new URL(request.url);
     const page = Number(searchParams.get("page") || 1);
-    const limit = Number(searchParams.get("limit") || 12);
-    const search = searchParams.get("search");
-
-    const query = {};
-    if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
-        { tags: { $in: [new RegExp(search, "i")] } },
-      ];
-    }
+    const limit = Number(searchParams.get("limit") || ADMIN_PINS_PAGE_SIZE);
+    const query = buildAdminPinSearch(searchParams.get("search"));
 
     const total = await Pin.countDocuments(query);
-    const pages = Math.ceil(total / limit);
-
     const pins = await Pin.find(query)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
@@ -43,19 +40,18 @@ export async function GET(request) {
     });
     const blockedIds = new Set(await getBlockedUserIds());
 
-    const pinsWithStatus = pinsWithUsers.map((pin) => ({
-      ...pin,
-      userBlocked: pin.user?.id ? blockedIds.has(pin.user.id) : false,
-    }));
-
     return Response.json({
       success: true,
-      data: { pins: pinsWithStatus, pages, total },
+      data: {
+        pins: pinsWithUsers.map((pin) => ({
+          ...pin,
+          userBlocked: pin.user?.id ? blockedIds.has(pin.user.id) : false,
+        })),
+        pages: Math.ceil(total / limit),
+        total,
+      },
     });
   } catch (error) {
-    return Response.json(
-      { success: false, message: "Failed to fetch pins" },
-      { status: 500 }
-    );
+    return handleApiError(new AppError("Failed to fetch pins", 500));
   }
 }

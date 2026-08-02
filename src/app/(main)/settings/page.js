@@ -6,7 +6,11 @@ import Image from "@/components/Image/Image";
 import { useSession } from "@/lib/auth-client";
 import useAuthStore from "@/stores/authStore";
 import apiRequest from "@/lib/apiRequest";
-import { uploadWallpaper } from "@/lib/uploadWallpaper";
+import {
+  validateProfileForm,
+  resolveAvatarUpload,
+} from "@/lib/profileActions";
+import { SUCCESS_TOAST_MS } from "@/lib/constants";
 import {
   HiUser,
   HiCheckCircle,
@@ -37,54 +41,36 @@ function SettingsPage() {
     setUserName(user.userName || "");
   }, [user]);
 
-  const handleAvatarSelect = (e) => {
+  const selectAvatarFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file));
   };
 
-  const handleSave = async (e) => {
+  const saveProfile = async (e) => {
     e.preventDefault();
     setSaving(true);
     setSuccess(false);
     setError(null);
 
-    const trimmedName = displayName.trim();
-    const trimmedUser = userName.trim();
-
-    if (!trimmedUser) {
-      setError("Username is required");
-      setSaving(false);
-      return;
-    }
-
-    if (!/^[a-zA-Z0-9_]{3,30}$/.test(trimmedUser)) {
-      setError("Username must be 3-30 characters (letters, numbers, underscore)");
+    const validated = validateProfileForm({ displayName, userName });
+    if (validated.error) {
+      setError(validated.error);
       setSaving(false);
       return;
     }
 
     try {
-      let imgPath = user?.img || null;
-
-      if (avatarFile) {
-        setUploading(true);
-        const mediaData = await uploadWallpaper(avatarFile, {
-          folder: "/avatars",
-          purpose: "avatar",
-        });
-        imgPath = mediaData.url || mediaData.filePath;
-        setUploading(false);
-      }
+      setUploading(!!avatarFile);
+      const imgPath = await resolveAvatarUpload(avatarFile, user?.img);
+      setUploading(false);
 
       const fields = {
-        displayName: trimmedName || trimmedUser,
-        userName: trimmedUser,
+        displayName: validated.displayName,
+        userName: validated.userName,
       };
-      if (imgPath !== user?.img) {
-        fields.img = imgPath;
-      }
+      if (imgPath !== user?.img) fields.img = imgPath;
 
       const res = await apiRequest.patch("/api/user", fields);
       const updated = res.data.user || { ...user, ...fields };
@@ -94,7 +80,7 @@ function SettingsPage() {
       setAvatarFile(null);
       setAvatarPreview(null);
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
+      setTimeout(() => setSuccess(false), SUCCESS_TOAST_MS);
     } catch (err) {
       setError(
         err.response?.data?.message || err.message || "Failed to update profile"
@@ -170,7 +156,7 @@ function SettingsPage() {
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              onChange={handleAvatarSelect}
+              onChange={selectAvatarFile}
               className="hidden"
             />
           </button>
@@ -186,7 +172,7 @@ function SettingsPage() {
           </div>
         </div>
 
-        <form onSubmit={handleSave} className="space-y-5">
+        <form onSubmit={saveProfile} className="space-y-5">
           <div>
             <label className="mb-1.5 block text-sm font-medium text-fog">
               Display Name

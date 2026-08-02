@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic";
 
 import connectDB from "@/lib/db";
-import { getSession } from "@/lib/getSession";
 import Pin from "@/lib/models/pin.model";
 import Comment from "@/lib/models/comment.model";
 import Board from "@/lib/models/board.model";
@@ -9,16 +8,13 @@ import Like from "@/lib/models/like.model";
 import Save from "@/lib/models/save.model";
 import Follow from "@/lib/models/follow.model";
 import { deleteUserById, updateUserById } from "@/lib/users";
+import { requireAdmin } from "@/lib/requireAdmin";
+import { handleApiError, AppError } from "@/lib/AppError";
 
 export async function PATCH(request, { params }) {
   try {
-    const session = await getSession();
-    if (!session || session.user.role !== "admin") {
-      return Response.json(
-        { success: false, message: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    const { error } = await requireAdmin();
+    if (error) return error;
 
     const { id } = await params;
     const body = await request.json();
@@ -27,26 +23,20 @@ export async function PATCH(request, { params }) {
     if (body.blocked !== undefined) fields.blocked = body.blocked;
 
     const user = await updateUserById(id, fields);
-
     return Response.json({ success: true, message: "User updated", user });
   } catch (error) {
-    const status = error.status || 500;
-    return Response.json(
-      { success: false, message: error.message || "Failed to update user" },
-      { status }
+    return handleApiError(
+      error instanceof AppError
+        ? error
+        : new AppError(error.message || "Failed to update user", error.status || 500)
     );
   }
 }
 
 export async function DELETE(_request, { params }) {
   try {
-    const session = await getSession();
-    if (!session || session.user.role !== "admin") {
-      return Response.json(
-        { success: false, message: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    const { error } = await requireAdmin();
+    if (error) return error;
 
     const { id } = await params;
     await connectDB();
@@ -61,9 +51,6 @@ export async function DELETE(_request, { params }) {
 
     return Response.json({ success: true, message: "User deleted" });
   } catch (error) {
-    return Response.json(
-      { success: false, message: "Failed to delete user" },
-      { status: 500 }
-    );
+    return handleApiError(new AppError("Failed to delete user", 500));
   }
 }
